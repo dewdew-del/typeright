@@ -3,16 +3,29 @@
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 :root {
-  --bg: #f3f5f9;
+  --bg: #f6f8fb;
   --surface: #ffffff;
   --surface-2: #eef1f6;
-  --border: #dde2ec;
-  --text: #1c2433;
-  --muted: #667085;
-  --accent: #2f7df6;
+  --border: #e3e8ef;
+  --text: #1b2433;
+  --muted: #5b6679;
+  --accent: #1f6ae0;
   --accent-contrast: #ffffff;
-  --good: #1f9d63;
-  --bad: #e5484d;
+  --accent-soft: #eaf1fe;
+  --art-bg: #f1f4f9;
+  --art-line: #aab4c5;
+  --good: #15803d;
+  --bad: #c2272d;
+
+  /* morning sky (landing) */
+  --sky-top: #4ea6ee;
+  --sky-bottom: #bfe3fb;
+  --on-sky: #0b2a5b;
+  --cta-bg: #0b2a5b;
+  --cta-fg: #ffffff;
+  --cloud-1: #d3e8fa;
+  --cloud-2: #e8f3fd;
+  --cloud-3: #ffffff;
 
   /* finger colors (one per finger) */
   --f-lp: #a855f7;
@@ -27,16 +40,29 @@
 }
 
 [data-theme='dark'] {
-  --bg: #0f131c;
-  --surface: #171c28;
+  --bg: #0f141d;
+  --surface: #171e2b;
   --surface-2: #1f2635;
-  --border: #2a3245;
-  --text: #e8ecf5;
-  --muted: #94a0b8;
-  --accent: #5b9bff;
+  --border: #263044;
+  --text: #e7ecf5;
+  --muted: #9aa6bd;
+  --accent: #6aa3ff;
   --accent-contrast: #0b1220;
-  --good: #3ccf8e;
-  --bad: #ff6b70;
+  --accent-soft: #18253d;
+  --art-bg: #1b2433;
+  --art-line: #4a5872;
+  --good: #4ade80;
+  --bad: #ff7b80;
+
+  /* night sky (landing) */
+  --sky-top: #082c5c;
+  --sky-bottom: #0a4a8a;
+  --on-sky: #ffffff;
+  --cta-bg: #ffffff;
+  --cta-fg: #0b3a75;
+  --cloud-1: #6f98c6;
+  --cloud-2: #a9c0dc;
+  --cloud-3: #f2f7fc;
 }
 
 @theme inline {
@@ -48,8 +74,14 @@
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-contrast: var(--accent-contrast);
+  --color-accent-soft: var(--accent-soft);
+  --color-art-bg: var(--art-bg);
   --color-good: var(--good);
   --color-bad: var(--bad);
+  --color-on-sky: var(--on-sky);
+  --color-cta: var(--cta-bg);
+  --color-cta-fg: var(--cta-fg);
+  --font-sans: 'Inter Variable', system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
 }
 
@@ -58,11 +90,26 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
-button { font: inherit; color: inherit; }
+button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Tinted shapes for illustrations: one accent in four strengths. */
+.art-t1 { fill: var(--accent); }
+.art-t2 { fill: color-mix(in srgb, var(--accent) 45%, var(--surface)); }
+.art-t3 { fill: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+.art-t4 { fill: color-mix(in srgb, var(--accent) 11%, var(--surface)); }
+.art-fs { fill: var(--surface); }
+.art-s1 { stroke: var(--accent); }
+.art-s2 { stroke: color-mix(in srgb, var(--accent) 45%, var(--surface)); }
+.art-s3 { stroke: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+
+@keyframes twinkle { 0%, 100% { opacity: 0.9 } 50% { opacity: 0.25 } }
+@keyframes blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+.twinkle { animation: twinkle 4s ease-in-out infinite; }
+.caret { animation: blink 1s steps(1) infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

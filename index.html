@@ -3,9 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#2f7df6" />
+    <meta name="theme-color" content="#1f6ae0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>TypeRight – Learn to type. Race to the top.</title>
+    <script>
+      // Set the theme before first paint so there is no light/dark flash.
+      try {
+        var mode = (JSON.parse(localStorage.getItem('typeright.settings') || '{}').state || {}).theme || 'auto'
+        var h = new Date().getHours()
+        document.documentElement.dataset.theme = mode === 'auto' ? (h >= 6 && h < 18 ? 'light' : 'dark') : mode
+      } catch (e) {
+        var hh = new Date().getHours()
+        document.documentElement.dataset.theme = hh >= 6 && hh < 18 ? 'light' : 'dark'
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,11 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type Theme = 'light' | 'dark'
+/** 'auto' follows the visitor's clock (light from 06:00 to 17:59); light and dark force a theme. */
+export type ThemeMode = 'auto' | 'light' | 'dark'
 export type TextSize = 'sm' | 'md' | 'lg'
 
 interface SettingsState {
-  theme: Theme
+  theme: ThemeMode
   sound: boolean
   showKeyboard: boolean
   showHands: boolean
@@ -13,13 +14,10 @@ interface SettingsState {
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void
 }
 
-const prefersDark = () =>
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches
-
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      theme: prefersDark() ? 'dark' : 'light',
+      theme: 'auto',
       sound: true,
       showKeyboard: true,
       showHands: true,
