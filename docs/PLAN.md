@@ -2,6 +2,34 @@
 
 Competitive typing trainer: lessons → practice → ranked tests → live races. Web (Vercel) first, Tauri desktop last, one codebase. Total cost ₱0.
 
+## Update v2 (design phase, supersedes anything below that differs)
+Details: [JOURNEY.md](JOURNEY.md) and [LESSONS.md](LESSONS.md). The clickable design preview is the source of truth for screens.
+
+**Screen flow**
+- Landing (night or morning sky by time of day, sun/moon button) → "How do you want to type today?" with three picture buttons: **Journey**, **Play with friends**, **Casual typing**. Login is a small button; everything works without an account.
+- **Journey:** one continuous list of 200 lessons in 13 stages (checkpoint cards mark stage ends), auto-scrolls to the lesson in progress, lessons ahead can be skipped to, optional **Test skill** level test (intro, staged test, result with skipped stages).
+- **Play with friends:** Create a room (private or public, pick what to type from 10 text types incl. Filipino) or Join a room (code or public list) → waiting room (2 to 8 players) → live race → results.
+- **Casual typing:** setup (English or Filipino, 2 min or endless, sentences only) → typing → results (speed chart, keys to practice).
+- Inside the app: light and minimal, with a light/dark button on every screen. No sidebar.
+- Not yet designed: leaderboard, public profile, settings, race countdown, public rooms list as its own screen.
+
+**Rules changed from v1**
+- **Guests can compete** (races and the daily challenge) through Supabase **anonymous sign-ins**, validated like accounts. Guest session lives in the tab, so progress is gone when the site is closed. "Create account to keep this" links the guest to an email or Google identity and keeps the same user id (no merge). Abuse controls: Cloudflare Turnstile, Supabase per-IP limits, per-user submission limits, cleanup of old anonymous users. Guests appear on race results and daily and weekly boards labeled as guests; all-time board and badges are for accounts.
+- Daily challenge and class groups are kept in the plan but have no screen yet.
+- Guest progress is no longer saved in localStorage across sessions (session only).
+- Lessons: 200 lessons generated from specs; stop-on-error in Stages 1 to 3; 90% pass, stars, checkpoints per stage.
+
+**Revised build stages** (each ends: runs, how to test, commit, your go-ahead)
+1. Scaffold, theme, light/dark button, landing and path-choice screens (Stage 1 code exists: keyboard and finger colors; restyle to the new design)
+2. Typing engine (WPM, accuracy, keystroke log, per-key stats) + unit tests
+3. Lesson system: 200 lesson specs, drill generator, stars and unlocking, Journey screen with auto-scroll, session-only storage layer
+4. Level test, casual typing, results screens, weak-keys practice, settings
+5. Supabase setup, auth (email, Google, anonymous guest), profiles, guest to account linking
+6. Validated result submission (anti-cheat Edge Function), leaderboards, public profiles
+7. Live races (private and public rooms, Realtime), daily challenge, groups, badges and streaks
+8. PWA, accessibility, responsive polish, keep-alive, Vercel deploy
+9. Tauri desktop build
+
 ## 0. Decisions from your answers
 - **Supabase project**: I create it via the Supabase MCP at Stage 5 (will show you the cost check first; free plan allows 2 active projects, so tell me if you already have 2).
 - **GitHub**: you create a public repo; Vercel auto-deploys from it; GitHub Actions runs the keep-alive cron.

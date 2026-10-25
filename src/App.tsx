@@ -1,27 +1,28 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { AppLayout } from './components/layout/AppLayout'
+import { AppShell } from './components/layout/AppShell'
+import { useApplyTheme } from './lib/theme'
 import { ComingSoon } from './pages/ComingSoon'
-import { Home } from './pages/Home'
 import { KeyboardDemo } from './pages/KeyboardDemo'
-import { Lessons } from './pages/Lessons'
+import { Landing } from './pages/Landing'
+import { Modes } from './pages/Modes'
 
 const router = createBrowserRouter([
+  { path: '/', element: <Landing /> },
   {
-    element: <AppLayout />,
+    element: <AppShell />,
     children: [
-      { index: true, element: <Home /> },
-      { path: 'lessons', element: <Lessons /> },
+      { path: 'play', element: <Modes /> },
+      { path: 'journey', element: <ComingSoon title="Journey" stage={3} /> },
+      { path: 'friends', element: <ComingSoon title="Play with friends" stage={7} /> },
+      { path: 'casual', element: <ComingSoon title="Casual typing" stage={4} /> },
+      { path: 'login', element: <ComingSoon title="Login" stage={5} /> },
       { path: 'keyboard', element: <KeyboardDemo /> },
-      { path: 'progress', element: <ComingSoon title="Progress" stage={4} /> },
-      { path: 'leaderboard', element: <ComingSoon title="Leaderboard" stage={6} /> },
-      { path: 'race', element: <ComingSoon title="Live races" stage={7} /> },
-      { path: 'groups', element: <ComingSoon title="Groups" stage={7} /> },
-      { path: 'settings', element: <ComingSoon title="Settings" stage={4} /> },
       { path: '*', element: <ComingSoon title="Page not found" stage={1} /> },
     ],
   },
 ])
 
 export default function App() {
+  useApplyTheme()
   return <RouterProvider router={router} />
 }
