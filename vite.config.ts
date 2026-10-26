@@ -10,6 +10,8 @@ export default defineConfig({
     // Installable app. The app shell and all lesson data are precached, so lessons,
     // practice and logged-out casual typing work offline. Online features need the network.
     VitePWA({
+      // The desktop app already ships its files; a service worker there would only serve stale copies.
+      disable: Boolean(process.env.TAURI_ENV_PLATFORM),
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {

@@ -1,6 +1,7 @@
 import type { Session, User } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import { captchaToken } from '../lib/captcha'
+import { IS_DESKTOP } from '../lib/platform'
 import { supabase } from '../lib/supabase'
 
 export interface Profile {
@@ -94,7 +95,9 @@ export const auth = {
     if (!supabase) return 'Accounts are not set up yet.'
     const captcha = await robotCheck()
     if (captcha.error) return captcha.error
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirect('/profile?set-password=1'), captchaToken: captcha.token })
+    // The desktop app can't open email links, so those go to the website (Supabase's Site URL).
+    const redirectTo = IS_DESKTOP ? undefined : redirect('/profile?set-password=1')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo, captchaToken: captcha.token })
     return error ? friendly(error.message) : null
   },
 
