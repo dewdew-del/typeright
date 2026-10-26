@@ -44,6 +44,10 @@ export function Landing() {
           <span className="text-[15px] opacity-85">Free. No account needed.</span>
         </div>
       </div>
+
+      <footer className="absolute inset-x-0 bottom-0 z-10 px-5 py-4 text-right text-sm sm:px-8">
+        <Link to="/privacy" className="underline underline-offset-2 opacity-90 hover:opacity-100">Privacy policy</Link>
+      </footer>
     </div>
   )
 }

@@ -20,6 +20,7 @@ const TITLES: [RegExp, string][] = [
   [/^\/practice/, 'Weak-keys practice'],
   [/^\/login/, 'Log in'],
   [/^\/leaderboard/, 'Leaderboard'],
+  [/^\/privacy/, 'Privacy policy'],
   [/^\/u\//, 'Profile'],
 ]
 
