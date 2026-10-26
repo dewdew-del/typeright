@@ -74,6 +74,16 @@ export const auth = {
   /** Google sign-in. For a guest, links Google to the guest account instead (same id). */
   async google(): Promise<string | null> {
     if (!supabase) return 'Accounts are not set up yet.'
+    // Ask Supabase first: if Google is switched off, the redirect would land on a raw JSON error page.
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL as string
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
+      const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } })
+      const settings = (await res.json()) as { external?: { google?: boolean } }
+      if (settings.external?.google === false) return 'Google login is not switched on yet. Use email for now.'
+    } catch {
+      /* can't tell: try the redirect anyway */
+    }
     const options = { redirectTo: redirect('/play') }
     const { error } = useAuth.getState().isAnonymous
       ? await supabase.auth.linkIdentity({ provider: 'google', options })
