@@ -1,5 +1,8 @@
 import { Link, Outlet } from 'react-router-dom'
+import { useAuth } from '../../storage/authStore'
+import { Avatar } from './Avatar'
 import { Logo } from './Logo'
+import { MergePrompt } from './MergePrompt'
 import { ThemeButton } from './ThemeButton'
 
 /** Header (logo, settings, theme button, Login) above every page inside the app. */
@@ -20,15 +23,29 @@ export function AppShell() {
             </svg>
           </Link>
           <ThemeButton />
-          <Link
-            to="/login"
-            className="rounded-full bg-accent px-[18px] py-[9px] text-sm font-bold text-accent-contrast hover:opacity-90"
-          >
-            Login
-          </Link>
+          <AccountButton />
         </div>
       </header>
       <Outlet />
+      <MergePrompt />
     </div>
+  )
+}
+
+/** Login for guests; the avatar and username (linking to the profile) once signed in. */
+export function AccountButton() {
+  const { user, profile, isAnonymous } = useAuth()
+  if (user && profile && !isAnonymous) {
+    return (
+      <Link to="/profile" className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1 pr-3.5 text-sm font-bold hover:bg-surface-2">
+        <Avatar name={profile.username} url={profile.avatar_url} size={30} />
+        <span className="max-w-[120px] truncate">{profile.username}</span>
+      </Link>
+    )
+  }
+  return (
+    <Link to="/login" className="rounded-full bg-accent px-[18px] py-[9px] text-sm font-bold text-accent-contrast hover:opacity-90">
+      Login
+    </Link>
   )
 }

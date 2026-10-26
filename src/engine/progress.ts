@@ -73,3 +73,31 @@ export function mergeKeyStats(a: Record<string, KeyStat>, b: Record<string, KeyS
   }
   return merged
 }
+
+/** True when there is anything worth saving or merging. */
+export function hasProgress(p: JourneyProgress): boolean {
+  return Object.keys(p.lessons).length > 0 || Object.keys(p.keyStats).length > 0 || p.testedOutStages.length > 0
+}
+
+/** Combines guest progress with an account's: best of each lesson, summed key stats, all skipped stages. */
+export function mergeProgress(a: JourneyProgress, b: JourneyProgress): JourneyProgress {
+  const lessons: Record<string, LessonRecord> = { ...b.lessons }
+  for (const [id, x] of Object.entries(a.lessons)) {
+    const y = lessons[id]
+    lessons[id] = y
+      ? {
+          stars: Math.max(x.stars, y.stars),
+          bestWpm: Math.max(x.bestWpm, y.bestWpm),
+          bestAccuracy: Math.max(x.bestAccuracy, y.bestAccuracy),
+          passed: x.passed || y.passed,
+          attempts: x.attempts + y.attempts,
+        }
+      : x
+  }
+  return {
+    v: 1,
+    lessons,
+    keyStats: mergeKeyStats(a.keyStats, b.keyStats),
+    testedOutStages: [...new Set([...a.testedOutStages, ...b.testedOutStages])].sort((m, n) => m - n),
+  }
+}
