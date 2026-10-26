@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { LessonDef } from '../../content/lessons/types'
 import type { LessonStatus } from '../../engine/progress'
@@ -41,10 +42,12 @@ interface Props {
 export function LessonCard({ lesson, status, stars, target }: Props) {
   const isKeys = lesson.type === 'new-keys' && lesson.keys !== ''
   const current = status === 'current'
-  const muted = status === 'locked' || status === 'skipped'
+  const locked = status === 'locked'
+  const muted = locked || status === 'skipped'
 
   return (
-    <Link
+    <Wrapper
+      locked={locked}
       id={`lesson-${lesson.order}`}
       to={`/journey/${lesson.id}`}
       className={[
@@ -53,7 +56,7 @@ export function LessonCard({ lesson, status, stars, target }: Props) {
         current ? 'border-2 border-accent' : 'border border-border',
         muted ? 'opacity-[0.88]' : '',
       ].join(' ')}
-      aria-label={`Lesson ${lesson.order}: ${lesson.title}. ${status === 'done' ? `${stars} of 3 stars` : status === 'current' ? 'Up next' : status === 'skipped' ? 'Skipped' : 'Not started'}`}
+      aria-label={`Lesson ${lesson.order}: ${lesson.title}. ${status === 'done' ? `${stars} of 3 stars` : status === 'current' ? 'Up next' : status === 'skipped' ? 'Skipped' : 'Locked'}`}
     >
       <div className="relative h-[100px] overflow-hidden bg-art-bg">
         <div aria-hidden className="absolute -bottom-[70%] -left-1/4 h-[110%] w-[95%] rounded-full" style={{ background: 'color-mix(in srgb, var(--accent) 11%, var(--surface))' }} />
@@ -93,13 +96,33 @@ export function LessonCard({ lesson, status, stars, target }: Props) {
           )}
           {current && <Pill className="bg-accent text-accent-contrast">Start</Pill>}
           {status === 'skipped' && <Pill className="bg-accent-soft text-accent">Skipped</Pill>}
-          {status === 'locked' && <Pill className="bg-surface text-muted">Skip</Pill>}
+          {locked && (
+            <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-surface">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+            </span>
+          )}
         </span>
       </div>
       <div className="border-t border-border px-3 pb-3.5 pt-3 text-center">
         <div className="text-[15px] font-bold tracking-tight">{lesson.title}</div>
         {target && <div className="mt-0.5 text-xs font-semibold text-accent">{target}</div>}
       </div>
+    </Wrapper>
+  )
+}
+
+/** Locked lessons are plain, unclickable cards; the rest link to the lesson. */
+function Wrapper({ locked, to, children, ...rest }: { locked: boolean; to: string; children: ReactNode; id: string; className: string; 'aria-label': string }) {
+  if (locked) {
+    return (
+      <div {...rest} aria-disabled="true" className={rest.className.replace(/hover:\S+/g, '') + ' cursor-not-allowed'}>
+        {children}
+      </div>
+    )
+  }
+  return (
+    <Link to={to} {...rest}>
+      {children}
     </Link>
   )
 }

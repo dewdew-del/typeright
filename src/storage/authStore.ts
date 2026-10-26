@@ -55,37 +55,12 @@ export const useAuth = create<AuthState>()((set, get) => ({
   },
 }))
 
-export const USERNAME_RE = /^[A-Za-z0-9_-]{3,20}$/
+export const USERNAME_RE = /^[A-Za-z0-9_.-]{3,20}$/
 
 const redirect = (path: string) => `${window.location.origin}${path}`
 
 /** Auth actions. Each returns an error message for the UI, or null on success. */
 export const auth = {
-  async usernameAvailable(name: string): Promise<boolean> {
-    if (!supabase || !USERNAME_RE.test(name)) return false
-    const { data, error } = await supabase.rpc('username_available', { name })
-    return !error && data === true
-  },
-
-  /** New account with email + password. A guest session is upgraded in place (same id) instead. */
-  async signUp(email: string, password: string, username: string): Promise<{ error: string | null; needsConfirm: boolean }> {
-    if (!supabase) return { error: 'Accounts are not set up yet.', needsConfirm: false }
-    if (!(await auth.usernameAvailable(username))) return { error: 'That username is taken or not valid.', needsConfirm: false }
-    const { isAnonymous } = useAuth.getState()
-    if (isAnonymous) {
-      // Linking keeps the guest's id and race results. The password is set after the email is confirmed.
-      const { error } = await supabase.auth.updateUser({ email }, { emailRedirectTo: redirect('/profile?set-password=1') })
-      if (!error) await supabase.from('profiles').update({ username }).eq('id', useAuth.getState().user!.id)
-      return { error: error?.message ?? null, needsConfirm: true }
-    }
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username }, emailRedirectTo: redirect('/play') },
-    })
-    return { error: error?.message ?? null, needsConfirm: !error && !data.session }
-  },
-
   async signIn(email: string, password: string): Promise<string | null> {
     if (!supabase) return 'Accounts are not set up yet.'
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -131,9 +106,38 @@ export const auth = {
     return null
   },
 
+  /** New profile photo: center-cropped to 256x256 WebP in the browser, then stored in the user's own folder. */
+  async uploadAvatar(file: File): Promise<string | null> {
+    const user = useAuth.getState().user
+    if (!supabase || !user) return 'You are not signed in.'
+    if (!file.type.startsWith('image/')) return 'Please choose an image file.'
+    let blob: Blob
+    try {
+      blob = await squareWebp(file, 256)
+    } catch {
+      return 'Could not read that image. Try a JPG or PNG.'
+    }
+    const path = `${user.id}/avatar.webp`
+    const { error } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/webp' })
+    if (error) return 'Upload failed. Please try again.'
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    // A changing query string makes browsers show the new photo instead of a cached one.
+    return auth.updateProfile({ avatar_url: `${data.publicUrl}?v=${Date.now()}` })
+  },
+
   async signOut() {
     await supabase?.auth.signOut()
   },
+}
+
+async function squareWebp(file: File, size: number): Promise<Blob> {
+  const bitmap = await createImageBitmap(file)
+  const side = Math.min(bitmap.width, bitmap.height)
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  canvas.getContext('2d')!.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, size, size)
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), 'image/webp', 0.85))
 }
 
 function friendly(message: string): string {

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { auth, useAuth } from '../../storage/authStore'
+import { useUi } from '../../stores/settings'
 
 /** Online play needs a player id: an account, or a guest session created on the spot. */
 export function NeedsPlayer({ children }: { children: ReactNode }) {
@@ -36,11 +37,12 @@ export function NeedsPlayer({ children }: { children: ReactNode }) {
 /** "Playing as Guest-4821 · Change name" */
 export function PlayingAs() {
   const profile = useAuth((s) => s.profile)
+  const open = useUi((s) => s.open)
   if (!profile) return null
   return (
     <div className="text-center text-sm text-muted">
       Playing as <b className="text-text">{profile.username}</b> ·{' '}
-      <Link to="/profile" className="font-bold text-accent">Change name</Link>
+      <button type="button" onClick={() => open('profile')} className="font-bold text-accent hover:underline">Change name</button>
     </div>
   )
 }

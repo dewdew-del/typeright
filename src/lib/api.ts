@@ -14,6 +14,7 @@ export interface RankedResult {
   rawWpm: number
   accuracy: number
   keystrokes: number
+  durationMs: number
   flags: string[]
   qualifies: boolean
   personalBest: boolean
@@ -37,7 +38,11 @@ async function call<T>(name: string, body: Record<string, unknown>): Promise<{ d
   return { error: 'Could not reach the server. Check your connection and try again.' }
 }
 
-export const issueTest = (duration: 30 | 60) => call<IssuedTest>('issue-test', { duration })
+export type CasualMode = '2min' | 'endless'
+export type Lang = 'en' | 'fil'
+
+/** Starts a casual run that counts for the leaderboard: the server picks the sentences. */
+export const issueCasual = (lang: Lang, mode: CasualMode) => call<IssuedTest>('issue-test', { kind: 'casual', lang, mode })
 
 /** Sends only the issue id and the raw keystroke log: the server computes the score. */
 export const submitResult = (issueId: string, log: Keystroke[]) => call<RankedResult>('submit-result', { issueId, log })
@@ -56,15 +61,9 @@ export interface BoardRow {
 
 export type Period = 'all' | 'weekly' | 'daily'
 
-export async function getLeaderboard(duration: 30 | 60, period: Period, country: string | null) {
+export async function getCasualBoard(mode: CasualMode, lang: Lang, period: Period, country: string | null) {
   if (!supabase) return { rows: [] as BoardRow[], error: 'Leaderboards are not set up yet.' }
-  const { data, error } = await supabase.rpc('get_leaderboard', {
-    p_duration: duration,
-    p_period: period,
-    p_country: country,
-    p_lang: 'en',
-    p_limit: 50,
-  })
+  const { data, error } = await supabase.rpc('get_casual_board', { p_mode: mode, p_lang: lang, p_period: period, p_country: country, p_limit: 50 })
   return { rows: (data ?? []) as BoardRow[], error: error ? 'Could not load the leaderboard.' : null }
 }
 
@@ -75,8 +74,8 @@ export interface ProfileStats {
   avatar_url: string | null
   is_guest: boolean
   joined_at: string
-  best_30: number | null
-  best_60: number | null
+  best_2min: number | null
+  best_endless: number | null
   tests_taken: number
   avg_accuracy: number | null
   streak_current: number
@@ -100,22 +99,14 @@ export async function getPublicProfile(username: string) {
     .from('results')
     .select('id, duration_s, wpm, accuracy, created_at')
     .eq('user_id', stats.user_id)
+    .eq('kind', 'casual')
     .order('created_at', { ascending: false })
     .limit(10)
   return { stats, recent: (recent ?? []) as RecentResult[] }
 }
 
-// ------------------------------------------------------------------ daily challenge, streaks, badges
+// ------------------------------------------------------------------ streaks, badges
 
-export const issueDaily = () => call<IssuedTest>('issue-test', { kind: 'daily' })
-
-export async function getDailyBoard() {
-  if (!supabase) return { rows: [] as BoardRow[], error: 'Leaderboards are not set up yet.' }
-  const { data, error } = await supabase.rpc('get_daily_board', {})
-  return { rows: (data ?? []) as BoardRow[], error: error ? 'Could not load today\u2019s board.' : null }
-}
-
-/** Records today's practice for the signed-in player's streak. Safe to call often. */
 export async function touchStreak(): Promise<void> {
   if (!supabase) return
   const { data } = await supabase.auth.getSession()
@@ -128,59 +119,9 @@ export async function getBadges(userId: string): Promise<{ badge_id: string; awa
   return data ?? []
 }
 
-// ------------------------------------------------------------------ groups
-
-export interface Group {
-  id: string
-  name: string
-  join_code: string
-  owner_id: string
-}
+// ------------------------------------------------------------------ races
 
 const rpcError = (e: { message?: string } | null) => (e ? (e.message ?? 'Something went wrong.').replace(/^.*?:\s*/, '') : null)
-
-export async function myGroups(): Promise<Group[]> {
-  if (!supabase) return []
-  const { data } = await supabase.from('groups').select('id, name, join_code, owner_id').order('created_at')
-  return (data ?? []) as Group[]
-}
-
-export async function createGroup(name: string) {
-  if (!supabase) return { id: null, error: 'Not set up yet.' }
-  const { data, error } = await supabase.rpc('create_group', { p_name: name })
-  return { id: (data as { id: string }[] | null)?.[0]?.id ?? null, error: rpcError(error) }
-}
-
-export async function joinGroup(code: string) {
-  if (!supabase) return { id: null, error: 'Not set up yet.' }
-  const { data, error } = await supabase.rpc('join_group', { p_code: code })
-  return { id: (data as string | null) ?? null, error: rpcError(error) }
-}
-
-export async function getGroup(id: string) {
-  if (!supabase) return { group: null, members: [] as { user_id: string; username: string; avatar_url: string | null }[] }
-  const [{ data: group }, { data: members }] = await Promise.all([
-    supabase.from('groups').select('id, name, join_code, owner_id').eq('id', id).maybeSingle(),
-    supabase.from('group_members').select('user_id, profiles(username, avatar_url)').eq('group_id', id),
-  ])
-  type Row = { user_id: string; profiles: { username: string; avatar_url: string | null } | null }
-  return {
-    group: group as Group | null,
-    members: ((members ?? []) as unknown as Row[]).map((m) => ({ user_id: m.user_id, username: m.profiles?.username ?? '?', avatar_url: m.profiles?.avatar_url ?? null })),
-  }
-}
-
-export async function leaveGroup(groupId: string, userId: string) {
-  await supabase?.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId)
-}
-
-export async function getGroupBoard(groupId: string, duration: 30 | 60) {
-  if (!supabase) return { rows: [] as BoardRow[], error: null }
-  const { data, error } = await supabase.rpc('get_leaderboard', { p_duration: duration, p_period: 'all', p_group: groupId, p_limit: 100 })
-  return { rows: (data ?? []) as BoardRow[], error: error ? 'Could not load the group board.' : null }
-}
-
-// ------------------------------------------------------------------ races
 
 export interface Room {
   id: string

@@ -4,10 +4,9 @@ import { keyFromEvent } from '../../engine/keys'
 import { elapsedMs, type TypingSession } from '../../engine/session'
 import { formatTime } from '../../engine/stats'
 import { useTypingSession } from '../../engine/useTypingSession'
-import { targetForChar } from '../../layouts/qwerty'
 import { playKeySound } from '../../lib/sound'
 import { useSettings, type TextSize } from '../../stores/settings'
-import { HandGuide } from '../keyboard/HandGuide'
+import { FONT_FAMILY } from '../layout/SettingsDialog'
 import { Keyboard } from '../keyboard/Keyboard'
 
 export interface TypingResult {
@@ -27,8 +26,6 @@ interface Props {
   showKeyboard?: boolean
   /** Fade the keyboard so learners rely on it less ("no-look" practice). */
   dimKeyboard?: boolean
-  /** Show the hand diagram with the finger for the next key. */
-  showHands?: boolean
   /** Endless mode: called for more text when the end is near. */
   getMore?: () => string
   /** Increment to end the session now ("Finish"). */
@@ -57,7 +54,6 @@ export function TypingArea({
   timeLimitMs,
   showKeyboard = false,
   dimKeyboard = false,
-  showHands = false,
   getMore,
   finishSignal = 0,
   locked = false,
@@ -65,7 +61,7 @@ export function TypingArea({
   onFinish,
 }: Props) {
   const { session, stats, ended, onKey, extend, finish, now } = useTypingSession(target, mode, timeLimitMs)
-  const { sound, textSize } = useSettings()
+  const { sound, textSize, font } = useSettings()
   const boxRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const cursorRef = useRef<HTMLSpanElement>(null)
@@ -153,7 +149,7 @@ export function TypingArea({
       >
         <div
           className={['overflow-hidden font-mono leading-[1.8]', SIZE_CLASS[textSize]].join(' ')}
-          style={{ maxHeight: `${1.8 * VISIBLE_LINES}em` }}
+          style={{ maxHeight: `${1.8 * VISIBLE_LINES}em`, fontFamily: FONT_FAMILY[font] }}
         >
           <div
             ref={contentRef}
@@ -182,7 +178,6 @@ export function TypingArea({
           <Keyboard activeChar={ended ? undefined : text[cursor]} />
         </div>
       )}
-      {showHands && <HandGuide active={ended ? undefined : targetForChar(text[cursor] ?? '')?.key.finger} />}
     </div>
   )
 }

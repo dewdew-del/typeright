@@ -8,7 +8,7 @@ import { BACKSPACE, replay, type Keystroke, type Summary } from './scoring.ts'
 export const LIMITS = {
   /** Fewer printable keystrokes than this is not a real attempt. */
   minKeystrokes: 10,
-  maxKeystrokes: 4000,
+  maxKeystrokes: 20000,
   /** Net and gross speed caps. World-class typists sustain ~200 WPM in short tests. */
   maxWpm: 250,
   maxRawWpm: 300,
@@ -25,6 +25,9 @@ export const LIMITS = {
   /** The log can't cover more time than really passed since the test was issued. */
   clockSlackMs: 1500,
   maxIssueAgeMs: 10 * 60_000,
+  /** Endless (untimed) casual runs: at least a minute of typing to count, at most 30 minutes. */
+  endlessMinMs: 60_000,
+  endlessMaxMs: 30 * 60_000,
   /** Accept but mark for review. */
   flagWpm: 180,
 }
@@ -109,17 +112,24 @@ function flagsFor(summary: Summary): string[] {
   return flags
 }
 
+/**
+ * Timed tests (`durationMs` > 0) are scored over the full time. `durationMs` 0 means Endless:
+ * scored from first to last key, and it must last at least a minute.
+ */
 export function validateRanked(input: ValidationInput): Verdict {
   const log = parseLog(input.log)
   if (!log) return reject('bad-log')
+  const endless = input.durationMs === 0
 
   const age = input.now - input.issuedAt
-  if (age > LIMITS.maxIssueAgeMs) return reject('expired')
+  if (age > (endless ? LIMITS.endlessMaxMs + LIMITS.maxIssueAgeMs : LIMITS.maxIssueAgeMs)) return reject('expired')
   const lastT = log[log.length - 1].t
-  if (lastT > input.durationMs + LIMITS.lateGraceMs) return reject('after-time-limit')
+  const limit = endless ? LIMITS.endlessMaxMs : input.durationMs
+  if (lastT > limit + LIMITS.lateGraceMs) return reject('after-time-limit')
   if (lastT > age + LIMITS.clockSlackMs) return reject('clock-mismatch')
+  if (endless && lastT < LIMITS.endlessMinMs) return reject('too-short')
 
-  const { summary } = replay(input.text, log, 'free', input.durationMs)
+  const { summary } = replay(input.text, log, 'free', endless ? undefined : input.durationMs)
   if (summary.keystrokes < LIMITS.minKeystrokes) return reject('too-short')
   const bad = humanCheck(log, summary)
   if (bad) return reject(bad)
@@ -173,7 +183,7 @@ export const REASON_TEXT: Record<string, string> = {
   expired: 'This test expired. Start a new one.',
   'after-time-limit': 'Keys were recorded after the time ran out.',
   'clock-mismatch': 'The timing did not match the real time that passed.',
-  'too-short': 'Type a bit more for the result to count.',
+  'too-short': 'Type a bit more for the result to count (Endless needs at least 1 minute).',
   'impossible-speed': 'That speed is not humanly possible, so it was not counted.',
   'robotic-timing': 'The key timing was too even to be a person typing.',
   'rate-limited': 'Too many tests in a short time. Take a short break.',
