@@ -78,7 +78,10 @@ export function CasualPlay() {
   const lang: Lang = params.get('lang') === 'fil' ? 'fil' : 'en'
   const timed = params.get('length') === '2min'
   const addKeyStats = useProgress((s) => s.addKeyStats)
-  const online = useAuth((s) => s.user !== null)
+  const signedIn = useAuth((s) => s.user !== null)
+  // Offline or server trouble: let a signed-in player keep typing without the leaderboard.
+  const [practiceOnly, setPracticeOnly] = useState(false)
+  const online = signedIn && !practiceOnly
 
   const [round, setRound] = useState(() => Math.floor(Math.random() * 2 ** 31))
   const [finishSignal, setFinishSignal] = useState(0)
@@ -140,7 +143,7 @@ export function CasualPlay() {
                   (verified.result!.qualifies && verified.result!.rank !== null ? ` · #${verified.result!.rank} on the leaderboard` : ' · The leaderboard needs at least 95% accuracy')}
           </p>
         )}
-        {!online && (
+        {!signedIn && (
           <p className="rounded-2xl border border-border bg-accent-soft px-5 py-4 text-sm">
             Practice only. <Link to="/login" className="font-bold text-accent">Log in</Link> to get your runs on the leaderboard.
           </p>
@@ -163,7 +166,12 @@ export function CasualPlay() {
         {issueError ? (
           <div className="flex flex-col items-center gap-4">
             <p role="alert" className="font-semibold text-bad">{issueError}</p>
-            <button type="button" onClick={again} className="rounded-xl bg-accent px-6 py-3 font-bold text-accent-contrast">Try again</button>
+            <div className="flex flex-wrap justify-center gap-3">
+              <button type="button" onClick={again} className="rounded-xl bg-accent px-6 py-3 font-bold text-accent-contrast hover:opacity-90">Try again</button>
+              <button type="button" onClick={() => setPracticeOnly(true)} className="rounded-xl border border-border bg-surface px-6 py-3 font-bold text-text hover:bg-surface-2">
+                Practice without the leaderboard
+              </button>
+            </div>
           </div>
         ) : (
           'Getting your text…'

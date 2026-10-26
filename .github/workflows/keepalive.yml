@@ -1,0 +1,25 @@
+# Supabase pauses free projects after a week without database activity.
+# This reads one row through the REST API every 3 days, which counts as activity.
+# Repo settings → Secrets and variables → Actions: add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '23 4 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read one profile row
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' \
+            "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY")
+          echo "Supabase answered $status"
+          test "$status" = "200"

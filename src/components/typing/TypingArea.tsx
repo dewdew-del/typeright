@@ -38,6 +38,8 @@ interface Props {
 }
 
 const VISIBLE_LINES = 3
+/** Phones and tablets without a mouse: typing needs a real keyboard (Bluetooth works). */
+const TOUCH_ONLY = typeof window !== 'undefined' && window.matchMedia?.('(hover: none) and (pointer: coarse)').matches
 const SIZE_CLASS: Record<TextSize, string> = {
   sm: 'text-lg sm:text-[22px]',
   md: 'text-xl sm:text-[26px]',
@@ -132,6 +134,12 @@ export function TypingArea({
         <Stat value={`${Math.round(stats.accuracy)}%`} label="Accuracy" />
         <Stat value={clock} label={timeLimitMs === undefined ? (getMore ? 'Endless' : 'Time') : 'Left'} />
       </div>
+
+      {TOUCH_ONLY && (
+        <p className="rounded-2xl border border-border bg-accent-soft px-5 py-3 text-center text-sm font-semibold">
+          TypeRight needs a physical keyboard. On a phone or tablet, connect a Bluetooth keyboard, or use a computer.
+        </p>
+      )}
 
       <div
         ref={boxRef}

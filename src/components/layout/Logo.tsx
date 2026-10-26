@@ -27,7 +27,8 @@ export function Logo({ to, variant = 'surface', size = 'md' }: Props) {
       >
         T
       </span>
-      TypeRight
+      {/* Icon only on narrow phones so the header stays on one line; the name is still read out. */}
+      <span className="max-[420px]:sr-only">TypeRight</span>
     </Link>
   )
 }

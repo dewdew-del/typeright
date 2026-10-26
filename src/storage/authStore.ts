@@ -1,5 +1,6 @@
 import type { Session, User } from '@supabase/supabase-js'
 import { create } from 'zustand'
+import { captchaToken } from '../lib/captcha'
 import { supabase } from '../lib/supabase'
 
 export interface Profile {
@@ -63,7 +64,9 @@ const redirect = (path: string) => `${window.location.origin}${path}`
 export const auth = {
   async signIn(email: string, password: string): Promise<string | null> {
     if (!supabase) return 'Accounts are not set up yet.'
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const captcha = await robotCheck()
+    if (captcha.error) return captcha.error
+    const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken: captcha.token } })
     return error ? friendly(error.message) : null
   },
 
@@ -81,13 +84,17 @@ export const auth = {
   async ensureGuest(): Promise<string | null> {
     if (!supabase) return 'Online play is not set up yet.'
     if (useAuth.getState().user) return null
-    const { error } = await supabase.auth.signInAnonymously()
+    const captcha = await robotCheck()
+    if (captcha.error) return captcha.error
+    const { error } = await supabase.auth.signInAnonymously({ options: { captchaToken: captcha.token } })
     return error ? friendly(error.message) : null
   },
 
   async resetPassword(email: string): Promise<string | null> {
     if (!supabase) return 'Accounts are not set up yet.'
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirect('/profile?set-password=1') })
+    const captcha = await robotCheck()
+    if (captcha.error) return captcha.error
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirect('/profile?set-password=1'), captchaToken: captcha.token })
     return error ? friendly(error.message) : null
   },
 
@@ -140,7 +147,17 @@ async function squareWebp(file: File, size: number): Promise<Blob> {
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), 'image/webp', 0.85))
 }
 
+/** Turnstile token when the human check is set up; an error message if it couldn't run. */
+async function robotCheck(): Promise<{ token?: string; error?: string }> {
+  try {
+    return { token: await captchaToken() }
+  } catch {
+    return { error: 'Could not check that you are human. Reload the page and try again.' }
+  }
+}
+
 function friendly(message: string): string {
+  if (/captcha/i.test(message)) return 'The human check failed. Reload the page and try again.'
   if (/invalid login credentials/i.test(message)) return 'Wrong email or password.'
   if (/email not confirmed/i.test(message)) return 'Please confirm your email first. Check your inbox.'
   if (/anonymous sign-ins are disabled/i.test(message)) return 'Guest online play is not switched on yet.'
