@@ -40,13 +40,10 @@ Visitors get the new version on their next visit (the service worker updates in 
 - Supabase: Google provider on, anonymous sign-ins on, manual linking on
 - Google: OAuth client, Branding (home page and privacy link), app published
 
-**Not confirmed yet:**
-- Supabase URL Configuration: Site URL `https://typeright.vercel.app`, Redirect URLs `https://typeright.vercel.app/**` and `http://localhost:5173/**`
-- Google client Authorized JavaScript origins includes `https://typeright.vercel.app`
-- Test Google login on the live site
+- Confirmed 26 Oct 2026: Supabase Site URL and Redirect URLs, Google authorized JavaScript origin, and Google login tested on the live site
 
 ## Next steps, in suggested order
-1. Confirm the two URL settings above and test Google login on the live site.
+1. Done: URL settings confirmed and Google login tested on the live site.
 2. Create a public GitHub repo, push the code, and connect Vercel to it for automatic deploys.
    Add the repo secrets `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` so `.github/workflows/keepalive.yml` runs.
 3. Rebuild the desktop installer (`npm run desktop:build`) to include the latest changes.
