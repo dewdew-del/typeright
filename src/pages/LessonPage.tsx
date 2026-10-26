@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { HandGuide } from '../components/keyboard/HandGuide'
 import { Keyboard } from '../components/keyboard/Keyboard'
 import { TypingArea, type TypingResult } from '../components/typing/TypingArea'
 import { allowedKeys, LESSONS, lessonById, STAGE_NAMES } from '../content/lessons/catalog'
@@ -9,7 +8,7 @@ import { TIPS } from '../content/tips'
 import { targetForChar } from '../layouts/qwerty'
 import { FINGER_NAMES } from '../layouts/types'
 import { buildDrill, weakWeights } from '../engine/drill'
-import { starsFor } from '../engine/progress'
+import { currentLesson, lessonStatus, starsFor } from '../engine/progress'
 import { formatTime } from '../engine/stats'
 import { touchStreak } from '../lib/api'
 import { useProgress } from '../storage/progressStore'
@@ -37,11 +36,26 @@ function keyInstructions(lesson: LessonDef): string[] {
 export function LessonPage() {
   const { lessonId = '' } = useParams()
   const lesson = lessonById(lessonId)
+  const progress = useProgress((s) => s.progress)
   if (!lesson) {
     return (
       <main className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-3xl font-bold">Lesson not found</h1>
         <Link to="/journey" className="mt-4 inline-block font-semibold text-accent">Back to Journey</Link>
+      </main>
+    )
+  }
+  // Lessons ahead stay locked until you reach them (or pass the level test).
+  const current = currentLesson(LESSONS, progress)
+  if (lessonStatus(lesson, progress, current) === 'locked') {
+    return (
+      <main className="mx-auto flex max-w-[560px] flex-col items-center gap-4 px-6 py-14 text-center">
+        <h1 className="text-3xl font-bold">This lesson is locked</h1>
+        <p className="text-muted">Finish the lessons before it first{current ? `: you are on lesson ${current.order}, ${current.title}` : ''}. Or use Test skill on the Journey to skip ahead.</p>
+        <div className="flex gap-3">
+          {current && <Link to={`/journey/${current.id}`} className="rounded-xl bg-accent px-6 py-3 font-bold text-accent-contrast">Go to lesson {current.order}</Link>}
+          <Link to="/journey" className="rounded-xl border border-border bg-surface px-6 py-3 font-bold">Back to Journey</Link>
+        </div>
       </main>
     )
   }
@@ -52,7 +66,7 @@ export function LessonPage() {
 function Lesson({ lesson }: { lesson: LessonDef }) {
   const navigate = useNavigate()
   const record = useProgress((s) => s.record)
-  const { showKeyboard, showHands, set } = useSettings()
+  const { showKeyboard, set } = useSettings()
   const [attempt, setAttempt] = useState(() => newAttempt(lesson))
   const [result, setResult] = useState<{ wpm: number; accuracy: number; stars: number; durationMs: number } | null>(null)
   const next = LESSONS[lesson.order] // order is 1-based, so this is the following lesson
@@ -96,7 +110,6 @@ function Lesson({ lesson }: { lesson: LessonDef }) {
         {lesson.type !== 'intro' && (
           <div className="flex gap-2">
             <button type="button" aria-pressed={showKeyboard} className={pill(showKeyboard)} onClick={() => set({ showKeyboard: !showKeyboard })}>Keyboard</button>
-            <button type="button" aria-pressed={showHands} className={pill(showHands)} onClick={() => set({ showHands: !showHands })}>Hands</button>
           </div>
         )}
       </div>
@@ -130,7 +143,6 @@ function Lesson({ lesson }: { lesson: LessonDef }) {
             timeLimitMs={lesson.timeLimitMs}
             showKeyboard={showKeyboard}
             dimKeyboard={lesson.stage >= 3}
-            showHands={showHands && lesson.stage <= 3}
             onFinish={onFinish}
           />
           <p className="text-center text-sm text-muted">
@@ -167,7 +179,6 @@ function IntroLesson({ lesson, onDone }: { lesson: LessonDef; onDone: () => void
             Feel the small bumps on <b>F</b> and <b>J</b>: they let you find home without looking.
           </p>
           <Keyboard activeChar="f" />
-          <HandGuide />
         </>
       )}
       <p className="text-center text-sm text-muted"><b className="text-text">Tip:</b> {TIPS[lesson.tipId]}</p>

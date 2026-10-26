@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ResultsView } from '../components/results/ResultsView'
 import { TypingArea, type TypingResult } from '../components/typing/TypingArea'
@@ -6,7 +6,8 @@ import { Choice } from '../components/ui/Choice'
 import { SENTENCES_EN } from '../content/sentences/en'
 import { SENTENCES_FIL } from '../content/sentences/fil'
 import { createRng } from '../engine/rng'
-import { touchStreak } from '../lib/api'
+import { issueCasual, submitResult, touchStreak, type IssuedTest, type RankedResult } from '../lib/api'
+import { useAuth } from '../storage/authStore'
 import { useProgress } from '../storage/progressStore'
 
 type Lang = 'en' | 'fil'
@@ -77,25 +78,49 @@ export function CasualPlay() {
   const lang: Lang = params.get('lang') === 'fil' ? 'fil' : 'en'
   const timed = params.get('length') === '2min'
   const addKeyStats = useProgress((s) => s.addKeyStats)
+  const online = useAuth((s) => s.user !== null)
 
   const [round, setRound] = useState(() => Math.floor(Math.random() * 2 ** 31))
   const [finishSignal, setFinishSignal] = useState(0)
   const [result, setResult] = useState<TypingResult | null>(null)
+  const [issued, setIssued] = useState<IssuedTest | null>(null)
+  const [issueError, setIssueError] = useState<string | null>(null)
+  const [verified, setVerified] = useState<{ result?: RankedResult; error?: string } | null>(null)
 
   const feed = useMemo(() => sentenceFeed(lang, round), [lang, round])
   const firstText = useMemo(() => [feed(), feed()].join(' '), [feed])
 
+  // Signed in: the server picks the text so the run can count for the leaderboard.
+  useEffect(() => {
+    if (!online) return
+    let live = true
+    setIssued(null)
+    setIssueError(null)
+    void issueCasual(lang, timed ? '2min' : 'endless').then(({ data, error }) => {
+      if (!live) return
+      if (data) setIssued(data)
+      else setIssueError(error ?? 'Could not start a leaderboard run.')
+    })
+    return () => {
+      live = false
+    }
+  }, [online, lang, timed, round])
+
   const onFinish = useCallback(
-    (r: TypingResult) => {
+    async (r: TypingResult) => {
       addKeyStats(r.keyStats)
       void touchStreak()
       setResult(r)
+      if (!issued || r.log.length === 0) return
+      const { data, error } = await submitResult(issued.issueId, r.log)
+      setVerified(data ? { result: data } : { error: error ?? 'The result could not be counted.' })
     },
-    [addKeyStats],
+    [addKeyStats, issued],
   )
 
   const again = () => {
     setResult(null)
+    setVerified(null)
     setFinishSignal(0)
     setRound(Math.floor(Math.random() * 2 ** 31))
   }
@@ -104,6 +129,22 @@ export function CasualPlay() {
     return (
       <main className="mx-auto flex max-w-[860px] flex-col gap-5 px-6 pb-16 pt-2">
         <h1 className="text-3xl font-bold tracking-tight">Results</h1>
+        {online && issued && (
+          <p role="status" className="rounded-2xl border border-border bg-surface px-5 py-4 text-sm font-semibold">
+            {!verified
+              ? 'Checking your result with the server…'
+              : verified.error
+                ? `Not counted for the leaderboard: ${verified.error}`
+                : `Verified by the server: ${Math.round(verified.result!.wpm)} WPM, ${verified.result!.accuracy}%` +
+                  (verified.result!.personalBest ? ' · New personal best' : '') +
+                  (verified.result!.qualifies && verified.result!.rank !== null ? ` · #${verified.result!.rank} on the leaderboard` : ' · The leaderboard needs at least 95% accuracy')}
+          </p>
+        )}
+        {!online && (
+          <p className="rounded-2xl border border-border bg-accent-soft px-5 py-4 text-sm">
+            Practice only. <Link to="/login" className="font-bold text-accent">Log in</Link> to get your runs on the leaderboard.
+          </p>
+        )}
         <ResultsView result={result}>
           <Link to="/practice" className="self-start text-sm font-bold text-accent">Practice your weak keys</Link>
           <div className="flex flex-wrap gap-3 pt-1">
@@ -112,6 +153,21 @@ export function CasualPlay() {
             <Link to="/play" className="rounded-xl border border-border bg-surface px-7 py-3.5 text-[17px] font-bold hover:bg-surface-2">Back to menu</Link>
           </div>
         </ResultsView>
+      </main>
+    )
+  }
+
+  if (online && !issued) {
+    return (
+      <main className="mx-auto max-w-[900px] px-6 py-10 text-center text-muted">
+        {issueError ? (
+          <div className="flex flex-col items-center gap-4">
+            <p role="alert" className="font-semibold text-bad">{issueError}</p>
+            <button type="button" onClick={again} className="rounded-xl bg-accent px-6 py-3 font-bold text-accent-contrast">Try again</button>
+          </div>
+        ) : (
+          'Getting your text…'
+        )}
       </main>
     )
   }
@@ -128,10 +184,10 @@ export function CasualPlay() {
         </button>
       </div>
       <TypingArea
-        key={round}
-        target={firstText}
+        key={issued?.issueId ?? round}
+        target={issued?.text ?? firstText}
         timeLimitMs={timed ? 120_000 : undefined}
-        getMore={feed}
+        getMore={issued ? undefined : feed}
         finishSignal={finishSignal}
         onFinish={onFinish}
       />

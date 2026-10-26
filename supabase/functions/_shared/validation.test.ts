@@ -125,3 +125,23 @@ describe('daily challenge text', () => {
     expect(dailySeed('2026-10-26')).not.toBe(dailySeed('2026-10-27'))
   })
 })
+
+describe('endless casual runs', () => {
+  it('needs at least a minute, then scores first-to-last key', async () => {
+    const { casualText } = await import('./casualText')
+    const text = casualText(9, 'en', 9000)
+    const short = typeText(text, human, 30_000)
+    expect(validateRanked({ text, log: short, durationMs: 0, issuedAt: 0, now: 40_000 }).reason).toBe('too-short')
+    const long = typeText(text, human, 90_000)
+    const v = validateRanked({ text, log: long, durationMs: 0, issuedAt: 0, now: 95_000 })
+    expect(v.ok).toBe(true)
+    expect(v.summary!.durationMs).toBe(long[long.length - 1].t)
+  })
+
+  it('casual text is long enough and in the chosen language', async () => {
+    const { casualText, CASUAL_CHARS } = await import('./casualText')
+    expect(casualText(1, 'en', CASUAL_CHARS['2min']).length).toBeGreaterThanOrEqual(2200)
+    expect(casualText(1, 'fil', 300)).toMatch(/ang|sa|ng/)
+    expect(casualText(1, 'en', 300)).toMatch(/^[ -~]+$/)
+  })
+})

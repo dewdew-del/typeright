@@ -1,12 +1,16 @@
 import { Link, Outlet } from 'react-router-dom'
 import { useAuth } from '../../storage/authStore'
+import { useUi } from '../../stores/settings'
 import { Avatar } from './Avatar'
 import { Logo } from './Logo'
 import { MergePrompt } from './MergePrompt'
+import { ProfilePanel } from './ProfilePanel'
+import { SettingsDialog } from './SettingsDialog'
 import { ThemeButton } from './ThemeButton'
 
 /** Header (logo, settings, theme button, Login) above every page inside the app. */
 export function AppShell() {
+  const open = useUi((s) => s.open)
   return (
     <div className="min-h-full bg-bg text-text">
       <header className="flex flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-8">
@@ -22,8 +26,9 @@ export function AppShell() {
               <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
             </svg>
           </Link>
-          <Link
-            to="/settings"
+          <button
+            type="button"
+            onClick={() => open('settings')}
             aria-label="Settings"
             className="grid h-[38px] w-[38px] place-items-center rounded-full border border-border bg-surface text-text hover:bg-surface-2"
           >
@@ -31,26 +36,29 @@ export function AppShell() {
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
             </svg>
-          </Link>
+          </button>
           <ThemeButton />
           <AccountButton />
         </div>
       </header>
       <Outlet />
       <MergePrompt />
+      <SettingsDialog />
+      <ProfilePanel />
     </div>
   )
 }
 
-/** Login for guests; the avatar and username (linking to the profile) once signed in. */
+/** Login for guests; the avatar and username (opens the profile panel) once signed in. */
 export function AccountButton() {
   const { user, profile, isAnonymous } = useAuth()
+  const open = useUi((s) => s.open)
   if (user && profile && !isAnonymous) {
     return (
-      <Link to="/profile" className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1 pr-3.5 text-sm font-bold hover:bg-surface-2">
+      <button type="button" onClick={() => open('profile')} aria-label="Your profile" className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1 pr-3.5 text-sm font-bold hover:bg-surface-2">
         <Avatar name={profile.username} url={profile.avatar_url} size={30} />
         <span className="max-w-[120px] truncate">{profile.username}</span>
-      </Link>
+      </button>
     )
   }
   return (

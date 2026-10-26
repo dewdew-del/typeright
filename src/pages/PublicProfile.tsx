@@ -53,8 +53,8 @@ export function PublicProfile() {
       </section>
 
       <section className="grid gap-3.5 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
-        <Stat label="Best 30 s" value={s.best_30 !== null ? `${Math.round(s.best_30)} WPM` : '–'} accent />
-        <Stat label="Best 60 s" value={s.best_60 !== null ? `${Math.round(s.best_60)} WPM` : '–'} />
+        <Stat label="Best 2 min" value={s.best_2min !== null ? `${Math.round(s.best_2min)} WPM` : '–'} accent />
+        <Stat label="Best Endless" value={s.best_endless !== null ? `${Math.round(s.best_endless)} WPM` : '–'} />
         <Stat label="Tests taken" value={String(s.tests_taken)} />
         <Stat label="Average accuracy" value={s.avg_accuracy !== null ? `${Math.round(s.avg_accuracy)}%` : '–'} />
         <Stat label="Practice streak" value={`${s.streak_current} ${s.streak_current === 1 ? 'day' : 'days'}`} />
@@ -80,14 +80,14 @@ export function PublicProfile() {
       </section>
 
       <section className="rounded-3xl border border-border bg-surface p-6">
-        <h2 className="mb-3 text-lg font-bold">Recent ranked tests</h2>
+        <h2 className="mb-3 text-lg font-bold">Recent runs</h2>
         {state.recent.length === 0 ? (
-          <p className="text-sm text-muted">No ranked tests yet.</p>
+          <p className="text-sm text-muted">No leaderboard runs yet.</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {state.recent.map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
-                <span className="text-sm text-muted">{new Date(r.created_at).toLocaleDateString()} · {r.duration_s} s</span>
+                <span className="text-sm text-muted">{new Date(r.created_at).toLocaleDateString()} · {r.duration_s === 0 ? 'Endless' : '2 min'}</span>
                 <span className="font-bold tabular-nums">{Math.round(r.wpm)} WPM <span className="font-medium text-muted">· {r.accuracy}%</span></span>
               </li>
             ))}

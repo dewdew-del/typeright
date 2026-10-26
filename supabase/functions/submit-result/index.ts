@@ -118,6 +118,7 @@ Deno.serve(async (req) => {
     rawWpm: round1(s.rawWpm),
     accuracy,
     keystrokes: s.keystrokes,
+    durationMs: s.durationMs,
     flags: verdict.flags,
     qualifies,
     personalBest: qualifies && wpm > (prev?.wpm ?? 0),
