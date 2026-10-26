@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react'
+import { targetForChar } from '../../layouts/qwerty'
+import { HandGuide } from '../keyboard/HandGuide'
 import type { Keystroke, KeyStat, Summary, TypingMode } from '../../../supabase/functions/_shared/scoring'
 import { keyFromEvent } from '../../engine/keys'
 import { elapsedMs, type TypingSession } from '../../engine/session'
@@ -18,13 +20,32 @@ interface Props {
   /** Timed test length; omit for "type the whole text". */
   timeLimitMs?: number
   showKeyboard?: boolean
+  /** Fade the keyboard so learners rely on it less ("no-look" practice). */
+  dimKeyboard?: boolean
+  /** Show the hand diagram with the finger for the next key. */
+  showHands?: boolean
   onFinish?: (result: TypingResult) => void
 }
 
-/** The text to type with live WPM, accuracy and time. Captures keys only while focused. */
-export function TypingArea({ target, mode = 'free', timeLimitMs, showKeyboard = false, onFinish }: Props) {
+const VISIBLE_LINES = 3
+
+/**
+ * The text to type with live WPM, accuracy and time. Captures keys only while focused.
+ * Long texts show three lines at a time and scroll as you type.
+ */
+export function TypingArea({
+  target,
+  mode = 'free',
+  timeLimitMs,
+  showKeyboard = false,
+  dimKeyboard = false,
+  showHands = false,
+  onFinish,
+}: Props) {
   const { session, stats, ended, onKey, now } = useTypingSession(target, mode, timeLimitMs)
   const boxRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const cursorRef = useRef<HTMLSpanElement>(null)
   const [focused, setFocused] = useState(false)
   const reported = useRef<TypingSession | null>(null)
 
@@ -47,6 +68,20 @@ export function TypingArea({ target, mode = 'free', timeLimitMs, showKeyboard = 
 
   const typed = session.replay.typed
   const cursor = typed.length
+
+  // Keep the line with the cursor in view: the line above it stays visible for context.
+  useLayoutEffect(() => {
+    const content = contentRef.current
+    const cur = cursorRef.current
+    if (!content) return
+    if (!cur) {
+      if (cursor === 0) content.style.transform = ''
+      return
+    }
+    const line = parseFloat(getComputedStyle(content).lineHeight) || 40
+    const offset = Math.max(0, cur.offsetTop - line)
+    content.style.transform = `translateY(-${offset}px)`
+  }, [cursor, target])
   const elapsed = elapsedMs(session, now)
   const clock = timeLimitMs === undefined ? formatTime(elapsed) : formatTime(timeLimitMs - elapsed)
 
@@ -76,15 +111,24 @@ export function TypingArea({ target, mode = 'free', timeLimitMs, showKeyboard = 
         onCut={(e) => e.preventDefault()}
         className="relative cursor-text rounded-3xl border border-border bg-surface px-6 py-8 outline-none focus-visible:ring-2 focus-visible:ring-accent sm:px-9 sm:py-10"
       >
-        <div className={['font-mono text-xl leading-[1.8] sm:text-[26px]', focused ? '' : 'blur-[3px]'].join(' ')}>
-          {words.map(({ start, text }) => (
-            <span key={start} className="inline-block whitespace-pre">
-              {[...text].map((ch, j) => {
-                const i = start + j
-                return <Char key={i} ch={ch} typed={typed[i]} isCursor={i === cursor && !ended} />
-              })}
-            </span>
-          ))}
+        <div
+          className="overflow-hidden font-mono text-xl leading-[1.8] sm:text-[26px]"
+          style={{ maxHeight: `${1.8 * VISIBLE_LINES}em` }}
+        >
+          <div
+            ref={contentRef}
+            className={['relative transition-transform duration-150', focused ? '' : 'blur-[3px]'].join(' ')}
+          >
+            {words.map(({ start, text }) => (
+              <span key={start} className="inline-block whitespace-pre">
+                {[...text].map((ch, j) => {
+                  const i = start + j
+                  const isCursor = i === cursor && !ended
+                  return <Char key={i} ch={ch} typed={typed[i]} isCursor={isCursor} spanRef={isCursor ? cursorRef : undefined} />
+                })}
+              </span>
+            ))}
+          </div>
         </div>
         {!focused && !ended && (
           <div className="absolute inset-0 grid place-items-center rounded-3xl text-base font-semibold text-muted">
@@ -93,18 +137,23 @@ export function TypingArea({ target, mode = 'free', timeLimitMs, showKeyboard = 
         )}
       </div>
 
-      {showKeyboard && <Keyboard activeChar={ended ? undefined : target[cursor]} />}
+      {showKeyboard && (
+        <div className={dimKeyboard ? 'opacity-45 transition-opacity hover:opacity-100' : ''}>
+          <Keyboard activeChar={ended ? undefined : target[cursor]} />
+        </div>
+      )}
+      {showHands && <HandGuide active={ended ? undefined : targetForChar(target[cursor] ?? '')?.key.finger} />}
     </div>
   )
 }
 
-function Char({ ch, typed, isCursor }: { ch: string; typed?: string; isCursor: boolean }) {
+function Char({ ch, typed, isCursor, spanRef }: { ch: string; typed?: string; isCursor: boolean; spanRef?: Ref<HTMLSpanElement> }) {
   const shown = ch === ' ' ? ' ' : ch
   let cls = 'text-muted'
   if (typed !== undefined) cls = typed === ch ? 'text-good' : 'rounded-sm bg-bad/15 text-bad'
   else if (isCursor) cls = 'rounded-sm bg-accent/15 text-accent'
   return (
-    <span className={['relative', cls].join(' ')}>
+    <span ref={spanRef} className={['relative', cls].join(' ')}>
       {isCursor && (
         <span aria-hidden className="caret absolute -left-px top-[0.2em] h-[1.1em] w-[3px] rounded-full bg-accent" />
       )}
