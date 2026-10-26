@@ -1,4 +1,5 @@
-import { Link, Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../storage/authStore'
 import { useUi } from '../../stores/settings'
 import { Avatar } from './Avatar'
@@ -8,12 +9,42 @@ import { ProfilePanel } from './ProfilePanel'
 import { SettingsDialog } from './SettingsDialog'
 import { ThemeButton } from './ThemeButton'
 
+const TITLES: [RegExp, string][] = [
+  [/^\/play/, 'Choose a mode'],
+  [/^\/journey\/test/, 'Level test'],
+  [/^\/journey\/./, 'Lesson'],
+  [/^\/journey/, 'Journey'],
+  [/^\/friends/, 'Play with friends'],
+  [/^\/race\//, 'Race'],
+  [/^\/casual/, 'Casual typing'],
+  [/^\/practice/, 'Weak-keys practice'],
+  [/^\/login/, 'Log in'],
+  [/^\/leaderboard/, 'Leaderboard'],
+  [/^\/u\//, 'Profile'],
+]
+
+/** Each page gets its own tab title, which screen readers announce on navigation. */
+function usePageTitle() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    const name = TITLES.find(([re]) => re.test(pathname))?.[1]
+    document.title = name ? `${name} · TypeRight` : 'TypeRight'
+  }, [pathname])
+}
+
 /** Header (logo, settings, theme button, Login) above every page inside the app. */
 export function AppShell() {
   const open = useUi((s) => s.open)
+  usePageTitle()
   return (
     <div className="min-h-full bg-bg text-text">
-      <header className="flex flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-8">
+      <a
+        href="#content"
+        className="sr-only z-50 rounded-xl bg-accent px-4 py-2 font-bold text-accent-contrast focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Skip to content
+      </a>
+      <header className="flex items-center justify-between gap-3 px-4 py-5 sm:px-8">
         <Logo to="/play" />
         <div className="flex items-center gap-2.5">
           <Link
@@ -41,7 +72,9 @@ export function AppShell() {
           <AccountButton />
         </div>
       </header>
-      <Outlet />
+      <div id="content" tabIndex={-1} className="outline-none">
+        <Outlet />
+      </div>
       <MergePrompt />
       <SettingsDialog />
       <ProfilePanel />
