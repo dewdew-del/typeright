@@ -3,6 +3,8 @@ import { AppShell } from './components/layout/AppShell'
 import { useApplyTheme } from './lib/theme'
 import { CasualPlay, CasualSetup } from './pages/Casual'
 import { ComingSoon } from './pages/ComingSoon'
+import { CreateRoom, Friends, JoinRoom } from './pages/Friends'
+import { GroupDetail, Groups } from './pages/Groups'
 import { Journey } from './pages/Journey'
 import { Landing } from './pages/Landing'
 import { Leaderboard } from './pages/Leaderboard'
@@ -13,6 +15,7 @@ import { Modes } from './pages/Modes'
 import { Practice } from './pages/Practice'
 import { Profile } from './pages/Profile'
 import { PublicProfile } from './pages/PublicProfile'
+import { RaceRoom } from './pages/RaceRoom'
 import { Ranked } from './pages/Ranked'
 import { Settings } from './pages/Settings'
 
@@ -25,7 +28,13 @@ const router = createBrowserRouter([
       { path: 'journey', element: <Journey /> },
       { path: 'journey/test', element: <LevelTest /> },
       { path: 'journey/:lessonId', element: <LessonPage /> },
-      { path: 'friends', element: <ComingSoon title="Play with friends" stage={7} /> },
+      { path: 'friends', element: <Friends /> },
+      { path: 'friends/create', element: <CreateRoom /> },
+      { path: 'friends/join', element: <JoinRoom /> },
+      { path: 'race/:roomId', element: <RaceRoom /> },
+      { path: 'daily', element: <Ranked daily /> },
+      { path: 'groups', element: <Groups /> },
+      { path: 'groups/:groupId', element: <GroupDetail /> },
       { path: 'casual', element: <CasualSetup /> },
       { path: 'casual/play', element: <CasualPlay /> },
       { path: 'practice', element: <Practice /> },

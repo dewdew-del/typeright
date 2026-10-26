@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { rankedText } from './rankedText'
 import type { Keystroke } from './scoring'
-import { LIMITS, parseLog, validateRanked } from './validation'
+import { LIMITS, parseLog, validateRace, validateRanked } from './validation'
 
 const TEXT = rankedText(42, 30)
 
@@ -81,5 +81,47 @@ describe('rankedText', () => {
     expect(rankedText(1, 30).split(' ').length).toBeGreaterThanOrEqual(130)
     expect(rankedText(1, 60)).toBe(rankedText(1, 60))
     expect(rankedText(1, 60)).not.toBe(rankedText(2, 60))
+  })
+})
+
+describe('validateRace', () => {
+  const SHORT = 'the quick brown fox jumps over the lazy dog and runs back home again before the rain comes down'
+  const race = { text: SHORT, startsAt: 5_000_000, capMs: 120_000 }
+
+  it('accepts a finished human race and marks it complete', () => {
+    const log = typeText(SHORT, human, 120_000)
+    const v = validateRace({ ...race, log, now: race.startsAt + log[log.length - 1].t + 2000 })
+    expect(v.ok).toBe(true)
+    expect(v.complete).toBe(true)
+    expect(v.progress).toBe(SHORT.length)
+  })
+
+  it('accepts an unfinished race with its progress', () => {
+    const log = typeText(SHORT.slice(0, 40), human)
+    const v = validateRace({ ...race, log, now: race.startsAt + 60_000 })
+    expect(v).toMatchObject({ ok: true, complete: false, progress: 40 })
+  })
+
+  it('a player who barely typed is a did-not-finish with zero speed', () => {
+    const v = validateRace({ ...race, log: typeText('the', human), now: race.startsAt + 121_000 })
+    expect(v.ok).toBe(true)
+    expect(v.summary!.wpm).toBe(0)
+  })
+
+  it('rejects a log longer than the race really lasted, and bots', () => {
+    const log = typeText(SHORT, human, 120_000)
+    expect(validateRace({ ...race, log, now: race.startsAt + 3000 }).reason).toBe('clock-mismatch')
+    const bot = typeText(SHORT, () => 120)
+    expect(validateRace({ ...race, log: bot, now: race.startsAt + 30_000 }).reason).toBe('robotic-timing')
+  })
+})
+
+describe('daily challenge text', () => {
+  it('is the same for everyone on a date and changes at midnight Philippine time', async () => {
+    const { dailySeed, manilaDate } = await import('./rankedText')
+    expect(manilaDate(Date.UTC(2026, 9, 25, 15, 59))).toBe('2026-10-25') // 11:59 PM PHT
+    expect(manilaDate(Date.UTC(2026, 9, 25, 16, 0))).toBe('2026-10-26') // midnight PHT
+    expect(rankedText(dailySeed('2026-10-26'), 60)).toBe(rankedText(dailySeed('2026-10-26'), 60))
+    expect(dailySeed('2026-10-26')).not.toBe(dailySeed('2026-10-27'))
   })
 })

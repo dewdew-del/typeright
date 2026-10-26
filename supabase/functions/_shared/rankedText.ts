@@ -43,3 +43,18 @@ export function rankedText(seed: number, durationS: number): string {
   }
   return out.join(' ')
 }
+
+/** Today's date in the Philippines (YYYY-MM-DD): the daily challenge changes at midnight PHT. */
+export function manilaDate(now = Date.now()): string {
+  return new Date(now + 8 * 3_600_000).toISOString().slice(0, 10)
+}
+
+/** Same seed for everyone on the same date (FNV-1a hash), so everyone gets the same daily text. */
+export function dailySeed(date: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < date.length; i++) {
+    h ^= date.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return h >>> 0
+}

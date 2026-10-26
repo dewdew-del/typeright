@@ -1,7 +1,7 @@
-// Starts a ranked test: the server picks the text and remembers when it was issued.
+// Starts a ranked test or today's daily challenge: the server picks the text and remembers when.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, json } from '../_shared/http.ts'
-import { rankedText } from '../_shared/rankedText.ts'
+import { dailySeed, manilaDate, rankedText } from '../_shared/rankedText.ts'
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false },
@@ -17,7 +17,10 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: 'Sign in to take a ranked test.' }, 401)
 
   const body = await req.json().catch(() => ({}))
-  const durationS = body?.duration === 60 ? 60 : 30
+  const kind = body?.kind === 'daily' ? 'daily' : 'test'
+  // The daily challenge is always 60 seconds, with the same text for everyone that day.
+  const durationS = kind === 'daily' ? 60 : body?.duration === 60 ? 60 : 30
+  const dailyDate = kind === 'daily' ? manilaDate() : null
 
   // Starting tests is cheap, but not unlimited.
   const since = new Date(Date.now() - 10 * 60_000).toISOString()
@@ -28,14 +31,14 @@ Deno.serve(async (req) => {
     .gte('issued_at', since)
   if ((count ?? 0) >= 20) return json({ error: 'Too many tests started. Take a short break.' }, 429)
 
-  const seed = crypto.getRandomValues(new Uint32Array(1))[0]
+  const seed = dailyDate ? dailySeed(dailyDate) : crypto.getRandomValues(new Uint32Array(1))[0]
   const text = rankedText(seed, durationS)
   const { data, error } = await admin
     .from('test_issues')
-    .insert({ user_id: user.id, duration_s: durationS, text })
+    .insert({ user_id: user.id, duration_s: durationS, text, kind, daily_date: dailyDate })
     .select('id')
     .single()
   if (error || !data) return json({ error: 'Could not start the test.' }, 500)
 
-  return json({ issueId: data.id, text, durationS })
+  return json({ issueId: data.id, text, durationS, kind, dailyDate })
 })

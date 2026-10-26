@@ -2,16 +2,25 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/layout/Avatar'
 import { countryName } from '../content/countries'
-import { getPublicProfile, type ProfileStats, type RecentResult } from '../lib/api'
+import { BADGES } from '../content/badges'
+import { getBadges, getPublicProfile, type ProfileStats, type RecentResult } from '../lib/api'
 
 export function PublicProfile() {
   const { username = '' } = useParams()
   const [state, setState] = useState<{ stats: ProfileStats | null; recent: RecentResult[] } | null>(null)
+  const [earned, setEarned] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let live = true
     setState(null)
-    void getPublicProfile(username).then((r) => live && setState(r))
+    void getPublicProfile(username).then(async (r) => {
+      if (!live) return
+      setState(r)
+      if (r.stats) {
+        const b = await getBadges(r.stats.user_id)
+        if (live) setEarned(new Set(b.map((x) => x.badge_id)))
+      }
+    })
     return () => {
       live = false
     }
@@ -48,11 +57,26 @@ export function PublicProfile() {
         <Stat label="Best 60 s" value={s.best_60 !== null ? `${Math.round(s.best_60)} WPM` : '–'} />
         <Stat label="Tests taken" value={String(s.tests_taken)} />
         <Stat label="Average accuracy" value={s.avg_accuracy !== null ? `${Math.round(s.avg_accuracy)}%` : '–'} />
+        <Stat label="Practice streak" value={`${s.streak_current} ${s.streak_current === 1 ? 'day' : 'days'}`} />
+        <Stat label="Best streak" value={`${s.streak_best} ${s.streak_best === 1 ? 'day' : 'days'}`} />
       </section>
 
       <section className="rounded-3xl border border-border bg-surface p-6">
-        <h2 className="mb-1 text-lg font-bold">Badges</h2>
-        <p className="text-sm text-muted">Badges and streaks arrive in the next update.</p>
+        <h2 className="mb-4 text-lg font-bold">Badges <span className="text-sm font-semibold text-muted">{earned.size} of {BADGES.length}</span></h2>
+        <ul className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
+          {BADGES.map((b) => {
+            const has = earned.has(b.id)
+            return (
+              <li key={b.id} title={b.description} className={['flex items-center gap-3 rounded-2xl border p-3', has ? 'border-accent bg-accent-soft' : 'border-border bg-bg opacity-60'].join(' ')}>
+                <span aria-hidden className={['grid h-11 w-11 shrink-0 place-items-center rounded-full text-[13px] font-extrabold', has ? 'bg-accent text-accent-contrast' : 'border-2 border-dashed border-border text-muted'].join(' ')}>{b.mark}</span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold leading-tight">{b.name}</span>
+                  <span className="block text-xs text-muted">{has ? 'Earned' : 'Locked'}</span>
+                </span>
+              </li>
+            )
+          })}
+        </ul>
       </section>
 
       <section className="rounded-3xl border border-border bg-surface p-6">

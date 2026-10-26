@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     .eq('id', issueId)
     .eq('user_id', user.id)
     .is('consumed_at', null)
-    .select('id, text, duration_s, lang, kind, issued_at')
+    .select('id, text, duration_s, lang, kind, daily_date, issued_at')
     .maybeSingle()
   if (!issue) {
     await attempt('rejected', 'used')
@@ -66,12 +66,15 @@ Deno.serve(async (req) => {
   const accuracy = round1(s.accuracy)
   const qualifies = accuracy >= 95
 
-  const { data: prev } = await admin
-    .from('results')
-    .select('wpm')
-    .eq('user_id', user.id)
-    .eq('duration_s', issue.duration_s)
-    .eq('lang', issue.lang)
+  // Ranked tests compare with all-time ranked results; the daily challenge only with that day.
+  // deno-lint-ignore no-explicit-any
+  const sameBoard = (q: any) => {
+    let out = q.eq('kind', issue.kind).eq('duration_s', issue.duration_s).eq('lang', issue.lang)
+    if (issue.daily_date) out = out.eq('daily_date', issue.daily_date)
+    return out
+  }
+
+  const { data: prev } = await sameBoard(admin.from('results').select('wpm').eq('user_id', user.id))
     .gte('accuracy', 95)
     .order('wpm', { ascending: false })
     .limit(1)
@@ -85,6 +88,7 @@ Deno.serve(async (req) => {
       kind: issue.kind,
       lang: issue.lang,
       duration_s: issue.duration_s,
+      daily_date: issue.daily_date,
       wpm,
       raw_wpm: round1(s.rawWpm),
       accuracy,
@@ -99,17 +103,13 @@ Deno.serve(async (req) => {
   const best = Math.max(prev?.wpm ?? 0, qualifies ? wpm : 0)
   let rank: number | null = null
   if (best > 0) {
-    // All-time rank: players whose best qualifying run is faster than yours, plus one.
-    const { data: faster } = await admin
-      .from('results')
-      .select('user_id')
-      .eq('duration_s', issue.duration_s)
-      .eq('lang', issue.lang)
+    // Rank on the same board: players whose best qualifying run is faster than yours, plus one.
+    const { data: faster } = await sameBoard(admin.from('results').select('user_id'))
       .gte('accuracy', 95)
       .gt('wpm', best)
       .neq('user_id', user.id)
       .limit(10000)
-    rank = new Set((faster ?? []).map((r) => r.user_id)).size + 1
+    rank = new Set((faster ?? []).map((r: { user_id: string }) => r.user_id)).size + 1
   }
 
   return json({
