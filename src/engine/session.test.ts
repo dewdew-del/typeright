@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { replay } from '../../supabase/functions/_shared/scoring'
 import { keyFromEvent, type KeyLike } from './keys'
-import { createSession, elapsedMs, isEnded, pressKey, sessionStats } from './session'
+import { createSession, elapsedMs, endSession, extendTarget, isEnded, pressKey, sessionStats } from './session'
 
 const type = (s: ReturnType<typeof createSession>, keys: string[], start = 1000, gap = 100) =>
   keys.forEach((k, i) => pressKey(s, k, start + i * gap))
@@ -87,5 +87,25 @@ describe('keyFromEvent', () => {
 
   it('allows AltGr characters (ctrl+alt on Windows)', () => {
     expect(keyFromEvent(ev('@', { ctrlKey: true, altKey: true }))).toBe('@')
+  })
+})
+
+describe('endless and early finish', () => {
+  it('extends the text without losing what was typed', () => {
+    const s = createSession('ab')
+    pressKey(s, 'a', 0)
+    extendTarget(s, 'c d')
+    expect(s.replay.target).toBe('abc d')
+    pressKey(s, 'b', 100)
+    expect(isEnded(s)).toBe(false)
+  })
+
+  it('finish ends the session at that moment', () => {
+    const s = createSession('abcdef')
+    expect(endSession(s, 50)).toBe(false) // not started yet
+    type(s, ['a', 'b'], 0, 100)
+    expect(endSession(s, 500)).toBe(true)
+    expect(elapsedMs(s, 9999)).toBe(500)
+    expect(pressKey(s, 'c', 600)).toBe(false)
   })
 })

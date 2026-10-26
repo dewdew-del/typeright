@@ -1,109 +1,98 @@
 import { useCallback, useState } from 'react'
-import type { TypingMode } from '../../supabase/functions/_shared/scoring'
+import { Link } from 'react-router-dom'
+import { ResultsView } from '../components/results/ResultsView'
 import { TypingArea, type TypingResult } from '../components/typing/TypingArea'
-import { SENTENCES_EN } from '../content/sentences/en'
-import { formatTime, keyLabel, topMissedKeys } from '../engine/stats'
+import type { LessonDef } from '../content/lessons/types'
+import { buildDrill, weakWeights } from '../engine/drill'
+import { keyLabel, slowestKeys, topMissedKeys } from '../engine/stats'
+import { useProgress } from '../storage/progressStore'
 
-// Stage 2 test page for the typing engine. Casual typing and lessons reuse TypingArea later.
-const LIMITS: { label: string; ms?: number }[] = [{ label: 'Whole text' }, { label: '30 s', ms: 30_000 }, { label: '60 s', ms: 60_000 }]
+const LETTERS = new Set([' ', ...'abcdefghijklmnopqrstuvwxyz'])
 
-const pick = (not?: string) => {
-  const pool = SENTENCES_EN.filter((s) => s !== not)
-  return pool[Math.floor(Math.random() * pool.length)]
+/** The keys to drill: most missed first, then slowest. Letters only, so drills stay readable. */
+function weakLetters(stats: Parameters<typeof topMissedKeys>[0]): string[] {
+  const missed = topMissedKeys(stats, 6).map((k) => k.char.toLowerCase())
+  const slow = slowestKeys(stats, 4).map((k) => k.char.toLowerCase())
+  return [...new Set([...missed, ...slow])].filter((c) => /^[a-z]$/.test(c)).slice(0, 6)
 }
 
+function weakDrill(focus: string[], weak: Record<string, number>): string {
+  const lesson: LessonDef = {
+    id: 'weak-keys',
+    order: 0,
+    stage: 9,
+    type: 'review',
+    title: 'My weak keys',
+    keys: '',
+    newKeys: [],
+    focus,
+    style: 'words',
+    mode: 'free',
+    length: 260,
+    pass: { accuracy: 0, wpm: 0 },
+    tipId: 'accuracy',
+  }
+  return buildDrill({ lesson, allowed: LETTERS, weak, seed: Math.floor(Math.random() * 2 ** 31) })
+}
+
+/** Weak-keys practice: words built around the keys you miss or slow down on most. */
 export function Practice() {
-  const [mode, setMode] = useState<TypingMode>('free')
-  const [limit, setLimit] = useState(0)
-  const [showKeyboard, setShowKeyboard] = useState(true)
-  const [text, setText] = useState(() => pick())
+  const progress = useProgress((s) => s.progress)
+  const addKeyStats = useProgress((s) => s.addKeyStats)
+  const [focus] = useState(() => weakLetters(progress.keyStats))
+  const [text, setText] = useState(() => weakDrill(focus, weakWeights(progress.keyStats)))
   const [round, setRound] = useState(0)
   const [result, setResult] = useState<TypingResult | null>(null)
 
-  const timeLimitMs = LIMITS[limit].ms
-  // Timed tests need more text than one sentence.
-  const target = timeLimitMs === undefined ? text : [text, ...SENTENCES_EN.filter((s) => s !== text)].join(' ')
+  const onFinish = useCallback(
+    (r: TypingResult) => {
+      addKeyStats(r.keyStats)
+      setResult(r)
+    },
+    [addKeyStats],
+  )
 
-  const restart = () => {
+  const again = () => {
     setResult(null)
-    setText(pick(text))
-    setRound((r) => r + 1)
+    setText(weakDrill(focus, weakWeights(useProgress.getState().progress.keyStats)))
+    setRound((n) => n + 1)
   }
-  const onFinish = useCallback((r: TypingResult) => setResult(r), [])
 
-  const chip = (on: boolean) =>
-    [
-      'rounded-full border px-4 py-2 text-sm font-semibold',
-      on ? 'border-accent bg-accent text-accent-contrast' : 'border-border bg-surface text-text hover:bg-surface-2',
-    ].join(' ')
+  if (focus.length === 0) {
+    return (
+      <main className="mx-auto flex max-w-[680px] flex-col items-center gap-4 px-6 py-16 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">Weak-keys practice</h1>
+        <p className="text-muted">Type a lesson or a casual test first. We will learn which keys slow you down and build practice around them.</p>
+        <div className="flex gap-3">
+          <Link to="/journey" className="rounded-xl bg-accent px-6 py-3 font-bold text-accent-contrast">Go to Journey</Link>
+          <Link to="/casual" className="rounded-xl border border-border bg-surface px-6 py-3 font-bold">Casual typing</Link>
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <main className="mx-auto flex max-w-[900px] flex-col gap-6 px-6 pb-16 pt-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold tracking-tight">Practice</h1>
-        <button type="button" onClick={restart} className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold hover:bg-surface-2">
-          New text
-        </button>
+    <main className="mx-auto flex max-w-[900px] flex-col gap-6 px-6 pb-16 pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">Weak-keys practice</h1>
+        <div className="flex flex-wrap items-center gap-2" aria-label="Keys in this practice">
+          {focus.map((c) => (
+            <span key={c} className="grid h-8 min-w-8 place-items-center rounded-lg border-2 bg-surface px-2 text-sm font-extrabold text-accent" style={{ borderColor: 'color-mix(in srgb, var(--accent) 25%, var(--surface))' }}>
+              {keyLabel(c)}
+            </span>
+          ))}
+        </div>
       </div>
-
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Options">
-        {LIMITS.map((l, i) => (
-          <button key={l.label} type="button" aria-pressed={limit === i} className={chip(limit === i)} onClick={() => { setLimit(i); restart() }}>
-            {l.label}
-          </button>
-        ))}
-        <span className="mx-1 w-px self-stretch bg-border" aria-hidden />
-        <button type="button" aria-pressed={mode === 'free'} className={chip(mode === 'free')} onClick={() => { setMode('free'); restart() }}>
-          Free (Backspace allowed)
-        </button>
-        <button type="button" aria-pressed={mode === 'stop-on-error'} className={chip(mode === 'stop-on-error')} onClick={() => { setMode('stop-on-error'); restart() }}>
-          Stop on error
-        </button>
-        <span className="mx-1 w-px self-stretch bg-border" aria-hidden />
-        <button type="button" aria-pressed={showKeyboard} className={chip(showKeyboard)} onClick={() => setShowKeyboard((v) => !v)}>
-          Keyboard
-        </button>
-      </div>
-
-      <TypingArea key={round} target={target} mode={mode} timeLimitMs={timeLimitMs} showKeyboard={showKeyboard && !result} onFinish={onFinish} />
-
-      {result && (
-        <section aria-label="Result" className="flex flex-col gap-4 rounded-3xl border border-border bg-surface p-6">
-          <div className="flex flex-wrap gap-8">
-            <Big label="WPM" value={Math.round(result.summary.wpm)} accent />
-            <Big label="Raw WPM" value={Math.round(result.summary.rawWpm)} />
-            <Big label="Accuracy" value={`${Math.round(result.summary.accuracy)}%`} />
-            <Big label="Time" value={formatTime(result.summary.durationMs)} />
-            <Big label="Keystrokes logged" value={result.log.length} />
+      {result ? (
+        <ResultsView result={result}>
+          <div className="flex flex-wrap gap-3 pt-1">
+            <button type="button" onClick={again} className="rounded-xl bg-accent px-8 py-3.5 text-[17px] font-bold text-accent-contrast hover:opacity-90">Practice again</button>
+            <Link to="/play" className="rounded-xl border border-border bg-surface px-7 py-3.5 text-[17px] font-bold hover:bg-surface-2">Back to menu</Link>
           </div>
-          <div>
-            <div className="mb-2 text-sm font-bold">Most missed keys</div>
-            {topMissedKeys(result.keyStats).length === 0 ? (
-              <p className="text-sm text-muted">No misses. Nice.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {topMissedKeys(result.keyStats).map((k) => (
-                  <span key={k.char} className="rounded-xl border border-border bg-bg px-3 py-1.5 text-sm">
-                    <b className="text-accent">{keyLabel(k.char)}</b> <span className="text-muted">{k.misses} of {k.attempts}</span>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <button type="button" onClick={restart} className="self-start rounded-xl bg-accent px-6 py-3 font-bold text-accent-contrast hover:opacity-90">
-            Try again
-          </button>
-        </section>
+        </ResultsView>
+      ) : (
+        <TypingArea key={round} target={text} showKeyboard onFinish={onFinish} />
       )}
     </main>
-  )
-}
-
-function Big({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
-  return (
-    <div>
-      <div className={['text-3xl font-extrabold tracking-tight tabular-nums', accent ? 'text-accent' : ''].join(' ')}>{value}</div>
-      <div className="text-xs font-semibold text-muted">{label}</div>
-    </div>
   )
 }
