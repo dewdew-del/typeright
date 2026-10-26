@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LESSONS, lessonById } from '../content/lessons/catalog'
-import { currentLesson, emptyProgress, lessonStatus, recordAttempt, starsFor } from './progress'
+import { currentLesson, emptyProgress, hasProgress, lessonStatus, mergeProgress, recordAttempt, starsFor } from './progress'
 
 const l = (id: string) => lessonById(id)!
 
@@ -58,5 +58,21 @@ describe('progress', () => {
     let p = recordAttempt(emptyProgress(), l('l003'), 10, 95, { f: { attempts: 5, misses: 1, totalMs: 500 } })
     p = recordAttempt(p, l('l003'), 10, 95, { f: { attempts: 3, misses: 2, totalMs: 300 } })
     expect(p.keyStats.f).toEqual({ attempts: 8, misses: 3, totalMs: 800 })
+  })
+})
+
+describe('mergeProgress', () => {
+  it('keeps the best of each lesson, sums key stats and unions skipped stages', () => {
+    const guest = { ...recordAttempt(emptyProgress(), l('l003'), 12, 99, { f: { attempts: 2, misses: 1, totalMs: 10 } }), testedOutStages: [0] }
+    const account = { ...recordAttempt(emptyProgress(), l('l003'), 8, 91, { f: { attempts: 3, misses: 0, totalMs: 5 } }), testedOutStages: [1] }
+    const m = mergeProgress(guest, account)
+    expect(m.lessons.l003).toMatchObject({ stars: 3, bestWpm: 12, bestAccuracy: 99, passed: true, attempts: 2 })
+    expect(m.keyStats.f).toEqual({ attempts: 5, misses: 1, totalMs: 15 })
+    expect(m.testedOutStages).toEqual([0, 1])
+  })
+
+  it('hasProgress is false for an empty journey', () => {
+    expect(hasProgress(emptyProgress())).toBe(false)
+    expect(hasProgress(recordAttempt(emptyProgress(), l('l001'), 0, 0))).toBe(true)
   })
 })

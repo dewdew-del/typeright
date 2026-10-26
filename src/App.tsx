@@ -7,8 +7,10 @@ import { Journey } from './pages/Journey'
 import { Landing } from './pages/Landing'
 import { LessonPage } from './pages/LessonPage'
 import { LevelTest } from './pages/LevelTest'
+import { Login } from './pages/Login'
 import { Modes } from './pages/Modes'
 import { Practice } from './pages/Practice'
+import { Profile } from './pages/Profile'
 import { Settings } from './pages/Settings'
 
 const router = createBrowserRouter([
@@ -25,7 +27,8 @@ const router = createBrowserRouter([
       { path: 'casual/play', element: <CasualPlay /> },
       { path: 'practice', element: <Practice /> },
       { path: 'settings', element: <Settings /> },
-      { path: 'login', element: <ComingSoon title="Login" stage={5} /> },
+      { path: 'login', element: <Login /> },
+      { path: 'profile', element: <Profile /> },
       { path: '*', element: <ComingSoon title="Page not found" stage={1} /> },
     ],
   },

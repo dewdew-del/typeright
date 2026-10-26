@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { Choice } from '../components/ui/Choice'
+import { useAuth } from '../storage/authStore'
 import { useProgress } from '../storage/progressStore'
+import { clearRemoteProgress } from '../storage/progressSync'
 import { useSettings, type TextSize, type ThemeMode } from '../stores/settings'
 
 export function Settings() {
   const { theme, sound, showKeyboard, showHands, textSize, set } = useSettings()
   const resetProgress = useProgress((s) => s.reset)
+  const signedIn = useAuth((s) => s.user !== null && !s.isAnonymous)
   const [cleared, setCleared] = useState(false)
   const onOff = [
     { value: 'on', label: 'On' },
@@ -44,11 +47,14 @@ export function Settings() {
 
       <section className="flex flex-col gap-3 rounded-3xl border border-border bg-surface p-6 sm:p-7">
         <div className="text-sm font-bold">Progress</div>
-        <p className="text-sm text-muted">As a guest, your progress is kept only until you close the site.</p>
+        <p className="text-sm text-muted">
+          {signedIn ? 'Your progress is saved to your account.' : 'As a guest, your progress is kept only until you close the site.'}
+        </p>
         <button
           type="button"
           onClick={() => {
-            if (window.confirm('Clear all lesson progress and key stats in this tab?')) {
+            if (window.confirm(signedIn ? 'Clear all lesson progress and key stats from your account?' : 'Clear all lesson progress and key stats in this tab?')) {
+              if (signedIn) void clearRemoteProgress()
               resetProgress()
               setCleared(true)
             }
