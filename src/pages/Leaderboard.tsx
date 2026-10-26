@@ -68,7 +68,7 @@ export function Leaderboard() {
 
       <BoardTable rows={rows} error={error} empty="No results yet. Play casual typing while signed in to be first!" />
       <p className="text-center text-sm text-muted">
-        Server-verified casual runs with at least 95% accuracy. Endless runs need at least 1 minute of typing. Today and this week use Philippine time.
+        Server-verified casual runs. Endless runs need at least 1 minute of typing. Today and this week use Philippine time.
       </p>
     </main>
   )

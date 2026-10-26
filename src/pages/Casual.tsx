@@ -140,7 +140,7 @@ export function CasualPlay() {
                 ? `Not counted for the leaderboard: ${verified.error}`
                 : `Verified by the server: ${Math.round(verified.result!.wpm)} WPM, ${verified.result!.accuracy}%` +
                   (verified.result!.personalBest ? ' · New personal best' : '') +
-                  (verified.result!.qualifies && verified.result!.rank !== null ? ` · #${verified.result!.rank} on the leaderboard` : ' · The leaderboard needs at least 95% accuracy')}
+                  (verified.result!.qualifies && verified.result!.rank !== null ? ` · #${verified.result!.rank} on the leaderboard` : '')}
           </p>
         )}
         {!signedIn && (
