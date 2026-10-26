@@ -9,6 +9,9 @@ const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE
 
 const round1 = (x: number) => Math.round(x * 10) / 10
 
+// Leaderboard accuracy rule. Temporarily 0 (every verified run counts); the intended rule is 95.
+const MIN_ACCURACY = 0
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -64,7 +67,7 @@ Deno.serve(async (req) => {
   const s = verdict.summary
   const wpm = round1(s.wpm)
   const accuracy = round1(s.accuracy)
-  const qualifies = accuracy >= 95
+  const qualifies = accuracy >= MIN_ACCURACY
 
   // Ranked tests compare with all-time ranked results; the daily challenge only with that day.
   // deno-lint-ignore no-explicit-any
@@ -75,7 +78,7 @@ Deno.serve(async (req) => {
   }
 
   const { data: prev } = await sameBoard(admin.from('results').select('wpm').eq('user_id', user.id))
-    .gte('accuracy', 95)
+    .gte('accuracy', MIN_ACCURACY)
     .order('wpm', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -105,7 +108,7 @@ Deno.serve(async (req) => {
   if (best > 0) {
     // Rank on the same board: players whose best qualifying run is faster than yours, plus one.
     const { data: faster } = await sameBoard(admin.from('results').select('user_id'))
-      .gte('accuracy', 95)
+      .gte('accuracy', MIN_ACCURACY)
       .gt('wpm', best)
       .neq('user_id', user.id)
       .limit(10000)
