@@ -68,3 +68,15 @@ export function elapsedMs(s: TypingSession, now: number): number {
 export function sessionStats(s: TypingSession, now: number): Summary {
   return summarize(s.replay, elapsedMs(s, now))
 }
+
+/** Appends more text (endless mode). The text only ever grows, so the log stays valid. */
+export function extendTarget(s: TypingSession, more: string) {
+  if (s.endedAt === null) s.replay.target += more
+}
+
+/** Stops an untimed session early ("Finish"). Does nothing before the first key. */
+export function endSession(s: TypingSession, now: number): boolean {
+  if (s.endedAt !== null || s.startedAt === null) return false
+  s.endedAt = now
+  return true
+}

@@ -18,7 +18,7 @@ export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
       theme: 'auto',
-      sound: true,
+      sound: false,
       showKeyboard: true,
       showHands: true,
       textSize: 'md',

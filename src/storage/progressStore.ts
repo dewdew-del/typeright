@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { KeyStat } from '../../supabase/functions/_shared/scoring'
 import type { LessonDef } from '../content/lessons/types'
-import { emptyProgress, recordAttempt, type JourneyProgress } from '../engine/progress'
+import { emptyProgress, mergeKeyStats, recordAttempt, type JourneyProgress } from '../engine/progress'
 
 /**
  * Journey progress for the current visitor.
@@ -13,6 +13,9 @@ import { emptyProgress, recordAttempt, type JourneyProgress } from '../engine/pr
 interface ProgressState {
   progress: JourneyProgress
   record: (lesson: LessonDef, wpm: number, accuracy: number, keyStats: Record<string, KeyStat>) => void
+  /** Adds key stats from unranked typing (casual, practice) so weak-key drills learn from it. */
+  addKeyStats: (keyStats: Record<string, KeyStat>) => void
+  /** Marks stages as tested out; never un-skips a stage (placement only moves forward). */
   setTestedOut: (stages: number[]) => void
   reset: () => void
 }
@@ -49,7 +52,11 @@ export const useProgress = create<ProgressState>()(
       progress: emptyProgress(),
       record: (lesson, wpm, accuracy, keyStats) =>
         set((s) => ({ progress: recordAttempt(s.progress, lesson, wpm, accuracy, keyStats) })),
-      setTestedOut: (stages) => set((s) => ({ progress: { ...s.progress, testedOutStages: stages } })),
+      addKeyStats: (keyStats) => set((s) => ({ progress: { ...s.progress, keyStats: mergeKeyStats(s.progress.keyStats, keyStats) } })),
+      setTestedOut: (stages) =>
+        set((s) => ({
+          progress: { ...s.progress, testedOutStages: [...new Set([...s.progress.testedOutStages, ...stages])].sort((a, b) => a - b) },
+        })),
       reset: () => set({ progress: emptyProgress() }),
     }),
     { name: 'typeright.progress', version: 1, storage: createJSONStorage(() => safeSession) },

@@ -61,10 +61,15 @@ export function recordAttempt(
     passed: (prev?.passed ?? false) || stars > 0,
     attempts: (prev?.attempts ?? 0) + 1,
   }
-  const merged: Record<string, KeyStat> = { ...p.keyStats }
-  for (const [ch, s] of Object.entries(keyStats)) {
+  return { ...p, lessons: { ...p.lessons, [lesson.id]: record }, keyStats: mergeKeyStats(p.keyStats, keyStats) }
+}
+
+/** Sums two sets of per-key stats. */
+export function mergeKeyStats(a: Record<string, KeyStat>, b: Record<string, KeyStat>): Record<string, KeyStat> {
+  const merged: Record<string, KeyStat> = { ...a }
+  for (const [ch, s] of Object.entries(b)) {
     const m = merged[ch] ?? { attempts: 0, misses: 0, totalMs: 0 }
     merged[ch] = { attempts: m.attempts + s.attempts, misses: m.misses + s.misses, totalMs: m.totalMs + s.totalMs }
   }
-  return { ...p, lessons: { ...p.lessons, [lesson.id]: record }, keyStats: merged }
+  return merged
 }

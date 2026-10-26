@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { TypingMode } from '../../supabase/functions/_shared/scoring'
-import { checkTime, createSession, isEnded, pressKey, sessionStats, type TypingSession } from './session'
+import { checkTime, createSession, endSession, extendTarget, isEnded, pressKey, sessionStats, type TypingSession } from './session'
 
 /**
  * React wrapper around a TypingSession. The session is mutated in place (cheap per keystroke);
@@ -45,5 +45,14 @@ export function useTypingSession(target: string, mode: TypingMode, timeLimitMs?:
     [bump],
   )
 
-  return { session, stats: sessionStats(session, now), ended: isEnded(session), onKey, reset, now }
+  const extend = useCallback((more: string) => {
+    extendTarget(sessionRef.current, more)
+    setVersion((v) => v + 1)
+  }, [])
+
+  const finish = useCallback(() => {
+    if (endSession(sessionRef.current, performance.now())) bump()
+  }, [bump])
+
+  return { session, stats: sessionStats(session, now), ended: isEnded(session), onKey, reset, extend, finish, now }
 }
