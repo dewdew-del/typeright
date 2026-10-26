@@ -33,6 +33,10 @@ interface Props {
   getMore?: () => string
   /** Increment to end the session now ("Finish"). */
   finishSignal?: number
+  /** Ignore keys (e.g. during a race countdown). */
+  locked?: boolean
+  /** Called when progress changes: correct characters so far and live WPM. */
+  onProgress?: (correctChars: number, wpm: number) => void
   onFinish?: (result: TypingResult) => void
 }
 
@@ -56,6 +60,8 @@ export function TypingArea({
   showHands = false,
   getMore,
   finishSignal = 0,
+  locked = false,
+  onProgress,
   onFinish,
 }: Props) {
   const { session, stats, ended, onKey, extend, finish, now } = useTypingSession(target, mode, timeLimitMs)
@@ -78,6 +84,10 @@ export function TypingArea({
     if (finishSignal > 0) finish()
   }, [finishSignal, finish])
 
+  useEffect(() => {
+    onProgress?.(stats.correctChars, stats.wpm)
+  }, [onProgress, stats.correctChars, stats.wpm])
+
   // Endless: keep at least a few lines of text ahead of the cursor.
   useEffect(() => {
     if (getMore && !ended && text.length - cursor < 150) extend(' ' + getMore())
@@ -93,6 +103,7 @@ export function TypingArea({
     const key = keyFromEvent(e.nativeEvent)
     if (key === null) return
     e.preventDefault() // keep Space from scrolling and Backspace from navigating
+    if (locked) return
     if (sound && !ended) playKeySound(key === 'Backspace' || key === text[cursor])
     onKey(key)
   }

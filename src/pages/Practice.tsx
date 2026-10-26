@@ -5,6 +5,7 @@ import { TypingArea, type TypingResult } from '../components/typing/TypingArea'
 import type { LessonDef } from '../content/lessons/types'
 import { buildDrill, weakWeights } from '../engine/drill'
 import { keyLabel, slowestKeys, topMissedKeys } from '../engine/stats'
+import { touchStreak } from '../lib/api'
 import { useProgress } from '../storage/progressStore'
 
 const LETTERS = new Set([' ', ...'abcdefghijklmnopqrstuvwxyz'])
@@ -47,6 +48,7 @@ export function Practice() {
   const onFinish = useCallback(
     (r: TypingResult) => {
       addKeyStats(r.keyStats)
+      void touchStreak()
       setResult(r)
     },
     [addKeyStats],

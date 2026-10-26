@@ -11,6 +11,7 @@ import { FINGER_NAMES } from '../layouts/types'
 import { buildDrill, weakWeights } from '../engine/drill'
 import { starsFor } from '../engine/progress'
 import { formatTime } from '../engine/stats'
+import { touchStreak } from '../lib/api'
 import { useProgress } from '../storage/progressStore'
 import { useSettings } from '../stores/settings'
 
@@ -61,6 +62,7 @@ function Lesson({ lesson }: { lesson: LessonDef }) {
       const wpm = Math.round(r.summary.wpm)
       const accuracy = Math.round(r.summary.accuracy)
       record(lesson, wpm, accuracy, r.keyStats)
+      void touchStreak()
       setResult({ wpm, accuracy, stars: starsFor(lesson, wpm, accuracy), durationMs: r.summary.durationMs })
     },
     [lesson, record],

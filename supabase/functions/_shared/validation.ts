@@ -89,6 +89,26 @@ function variation(xs: number[]): number {
   return sd / mean
 }
 
+/** Speed and rhythm checks shared by ranked tests and races. Returns a reason, or null if human. */
+function humanCheck(log: Keystroke[], summary: Summary): string | null {
+  if (summary.wpm > LIMITS.maxWpm || summary.rawWpm > LIMITS.maxRawWpm) return 'impossible-speed'
+  const g = gaps(log)
+  if (g.length > 0) {
+    if (median(g) < LIMITS.minMedianGapMs) return 'impossible-speed'
+    const fastShare = g.filter((x) => x < LIMITS.fastGapMs).length / g.length
+    if (fastShare > LIMITS.maxFastGapShare) return 'impossible-speed'
+    if (g.length >= LIMITS.minGapsForRhythm && variation(g) < LIMITS.minGapVariation) return 'robotic-timing'
+  }
+  return null
+}
+
+function flagsFor(summary: Summary): string[] {
+  const flags: string[] = []
+  if (summary.wpm > LIMITS.flagWpm) flags.push('very-fast')
+  if (summary.accuracy === 100 && summary.wpm > 120) flags.push('perfect-and-fast')
+  return flags
+}
+
 export function validateRanked(input: ValidationInput): Verdict {
   const log = parseLog(input.log)
   if (!log) return reject('bad-log')
@@ -101,20 +121,50 @@ export function validateRanked(input: ValidationInput): Verdict {
 
   const { summary } = replay(input.text, log, 'free', input.durationMs)
   if (summary.keystrokes < LIMITS.minKeystrokes) return reject('too-short')
-  if (summary.wpm > LIMITS.maxWpm || summary.rawWpm > LIMITS.maxRawWpm) return reject('impossible-speed')
+  const bad = humanCheck(log, summary)
+  if (bad) return reject(bad)
+  return { ok: true, flags: flagsFor(summary), summary }
+}
 
-  const g = gaps(log)
-  if (g.length > 0) {
-    if (median(g) < LIMITS.minMedianGapMs) return reject('impossible-speed')
-    const fastShare = g.filter((x) => x < LIMITS.fastGapMs).length / g.length
-    if (fastShare > LIMITS.maxFastGapShare) return reject('impossible-speed')
-    if (g.length >= LIMITS.minGapsForRhythm && variation(g) < LIMITS.minGapVariation) return reject('robotic-timing')
+export interface RaceInput {
+  text: string
+  log: unknown
+  /** Server time the race started (ms). */
+  startsAt: number
+  now: number
+  /** Longest a race may last. */
+  capMs: number
+}
+
+export interface RaceVerdict extends Verdict {
+  /** Typed the whole text. */
+  complete?: boolean
+  /** Correct characters (progress for players who did not finish). */
+  progress?: number
+}
+
+/**
+ * Race results: speed is measured from the player's first to last key; finishing order is decided
+ * by the server's own clock (when the result arrives), never by the client.
+ * Players who barely typed are accepted as "did not finish" with zero speed.
+ */
+export function validateRace(input: RaceInput): RaceVerdict {
+  const log = parseLog(input.log)
+  if (!log) return reject('bad-log')
+  const elapsed = input.now - input.startsAt
+  if (elapsed < 0) return reject('clock-mismatch')
+  if (elapsed > input.capMs + 60_000) return reject('expired')
+  const lastT = log[log.length - 1].t
+  if (lastT > input.capMs + LIMITS.lateGraceMs) return reject('after-time-limit')
+  if (lastT > elapsed + LIMITS.clockSlackMs) return reject('clock-mismatch')
+
+  const { summary } = replay(input.text, log, 'free')
+  if (summary.keystrokes < LIMITS.minKeystrokes) {
+    return { ok: true, flags: [], summary: { ...summary, wpm: 0, rawWpm: 0 }, complete: false, progress: summary.correctChars }
   }
-
-  const flags: string[] = []
-  if (summary.wpm > LIMITS.flagWpm) flags.push('very-fast')
-  if (summary.accuracy === 100 && summary.wpm > 120) flags.push('perfect-and-fast')
-  return { ok: true, flags, summary }
+  const bad = humanCheck(log, summary)
+  if (bad) return reject(bad)
+  return { ok: true, flags: flagsFor(summary), summary, complete: summary.complete, progress: summary.correctChars }
 }
 
 /** What the player sees for each rejection reason. */
@@ -128,4 +178,6 @@ export const REASON_TEXT: Record<string, string> = {
   'robotic-timing': 'The key timing was too even to be a person typing.',
   'rate-limited': 'Too many tests in a short time. Take a short break.',
   used: 'This test was already submitted or is not yours.',
+  'not-racing': 'This race is not running right now.',
+  'not-member': 'You are not in this race.',
 }

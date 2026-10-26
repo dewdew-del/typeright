@@ -6,6 +6,7 @@ import { Choice } from '../components/ui/Choice'
 import { SENTENCES_EN } from '../content/sentences/en'
 import { SENTENCES_FIL } from '../content/sentences/fil'
 import { createRng } from '../engine/rng'
+import { touchStreak } from '../lib/api'
 import { useProgress } from '../storage/progressStore'
 
 type Lang = 'en' | 'fil'
@@ -87,6 +88,7 @@ export function CasualPlay() {
   const onFinish = useCallback(
     (r: TypingResult) => {
       addKeyStats(r.keyStats)
+      void touchStreak()
       setResult(r)
     },
     [addKeyStats],
