@@ -5,12 +5,15 @@ import { CasualPlay, CasualSetup } from './pages/Casual'
 import { ComingSoon } from './pages/ComingSoon'
 import { Journey } from './pages/Journey'
 import { Landing } from './pages/Landing'
+import { Leaderboard } from './pages/Leaderboard'
 import { LessonPage } from './pages/LessonPage'
 import { LevelTest } from './pages/LevelTest'
 import { Login } from './pages/Login'
 import { Modes } from './pages/Modes'
 import { Practice } from './pages/Practice'
 import { Profile } from './pages/Profile'
+import { PublicProfile } from './pages/PublicProfile'
+import { Ranked } from './pages/Ranked'
 import { Settings } from './pages/Settings'
 
 const router = createBrowserRouter([
@@ -29,6 +32,9 @@ const router = createBrowserRouter([
       { path: 'settings', element: <Settings /> },
       { path: 'login', element: <Login /> },
       { path: 'profile', element: <Profile /> },
+      { path: 'leaderboard', element: <Leaderboard /> },
+      { path: 'ranked', element: <Ranked /> },
+      { path: 'u/:username', element: <PublicProfile /> },
       { path: '*', element: <ComingSoon title="Page not found" stage={1} /> },
     ],
   },
