@@ -13,6 +13,7 @@ import { LevelTest } from './pages/LevelTest'
 import { Login } from './pages/Login'
 import { Modes } from './pages/Modes'
 import { Practice } from './pages/Practice'
+import { Privacy } from './pages/Privacy'
 import { PublicProfile } from './pages/PublicProfile'
 import { RaceRoom } from './pages/RaceRoom'
 import { useUi } from './stores/settings'
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'profile', element: <OpenProfile /> },
       { path: 'leaderboard', element: <Leaderboard /> },
+      { path: 'privacy', element: <Privacy /> },
       { path: 'u/:username', element: <PublicProfile /> },
       { path: '*', element: <ComingSoon title="Page not found" stage={1} /> },
     ],
