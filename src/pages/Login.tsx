@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import { IS_DESKTOP } from '../lib/platform'
 import { supabase } from '../lib/supabase'
 import { auth, useAuth } from '../storage/authStore'
 
@@ -64,13 +65,16 @@ export function Login() {
           <p className="mt-1.5 text-[15px] text-muted">
             {reset
               ? 'We will email you a link to set a new password.'
-              : isAnonymous
+              : IS_DESKTOP
+                ? 'Log in with your email and password. Signed up with Google? Set a password in your profile on the TypeRight website first.'
+                : isAnonymous
                 ? 'Link Google to keep your guest results.'
                 : 'Save your progress and get on the leaderboard. New here? Google creates your account.'}
           </p>
         </div>
 
-        {!reset && (
+        {/* Google sign-in needs a browser redirect, which the desktop app can't receive. */}
+        {!reset && !IS_DESKTOP && (
           <>
             <button
               type="button"
