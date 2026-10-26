@@ -197,9 +197,6 @@ function Char({ ch, typed, isCursor, spanRef }: { ch: string; typed?: string; is
   else if (isCursor) cls = 'rounded-sm bg-accent/15 text-accent'
   return (
     <span ref={spanRef} className={['relative', cls].join(' ')}>
-      {isCursor && (
-        <span aria-hidden className="caret absolute -left-px top-[0.2em] h-[1.1em] w-[3px] rounded-full bg-accent" />
-      )}
       {shown}
     </span>
   )
