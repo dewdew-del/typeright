@@ -52,6 +52,11 @@ export function Profile() {
           <h1 className="text-3xl font-bold tracking-tight">{profile?.username ?? 'Your profile'}</h1>
           <p className="text-sm text-muted">{isAnonymous ? 'Guest account (this tab only)' : user.email}</p>
         </div>
+        {profile && (
+          <Link to={`/u/${encodeURIComponent(profile.username)}`} className="ml-auto text-sm font-bold text-accent">
+            View public profile
+          </Link>
+        )}
       </div>
 
       {isAnonymous && (

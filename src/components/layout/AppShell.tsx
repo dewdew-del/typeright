@@ -13,6 +13,16 @@ export function AppShell() {
         <Logo to="/play" />
         <div className="flex items-center gap-2.5">
           <Link
+            to="/leaderboard"
+            aria-label="Leaderboard"
+            className="grid h-[38px] w-[38px] place-items-center rounded-full border border-border bg-surface text-text hover:bg-surface-2"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z" />
+              <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
+            </svg>
+          </Link>
+          <Link
             to="/settings"
             aria-label="Settings"
             className="grid h-[38px] w-[38px] place-items-center rounded-full border border-border bg-surface text-text hover:bg-surface-2"
