@@ -47,7 +47,7 @@ export interface Summary {
   wpm: number
   /** Gross speed: all printable keystrokes / 5 per minute. */
   rawWpm: number
-  /** Correct printable keystrokes / all printable keystrokes, 0-100. 100 when nothing was typed. */
+  /** Right characters / characters on screen, 0-100 (free mode; see accuracyOf). 100 when nothing was typed. */
   accuracy: number
   keystrokes: number
   complete: boolean
@@ -126,6 +126,16 @@ export function countCorrectChars(s: ReplayState): number {
 }
 
 /**
+ * Free mode: share of the text on screen that is right, so deleting a mistake brings accuracy
+ * back up (100% when everything shown is correct). Stop-on-error mode cannot delete, so it
+ * counts every key pressed.
+ */
+function accuracyOf(s: ReplayState, correctChars: number, keystrokes: number): number {
+  if (s.mode === 'free') return s.typed.length > 0 ? (correctChars / s.typed.length) * 100 : 100
+  return keystrokes > 0 ? (s.correctKeystrokes / keystrokes) * 100 : 100
+}
+
+/**
  * Speed and accuracy. `durationMs` defaults to first-to-last keystroke; timed tests pass the
  * time limit instead so stopping early can't inflate WPM.
  */
@@ -139,7 +149,7 @@ export function summarize(s: ReplayState, durationMs?: number): Summary {
     correctChars,
     wpm: minutes > 0 ? correctChars / 5 / minutes : 0,
     rawWpm: minutes > 0 ? keystrokes / 5 / minutes : 0,
-    accuracy: keystrokes > 0 ? (s.correctKeystrokes / keystrokes) * 100 : 100,
+    accuracy: accuracyOf(s, correctChars, keystrokes),
     keystrokes,
     complete: isComplete(s),
   }
