@@ -22,12 +22,7 @@ export function Landing() {
       <header className="relative z-10 flex items-center justify-between px-5 py-5 sm:px-8">
         <Logo to="/" variant="sky" size="lg" />
         <div className="flex items-center gap-4 text-base font-medium sm:gap-6">
-          <button type="button" className="flex items-center gap-1.5 py-1.5" aria-label="Language: English">
-            English
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
+          <span className="py-1.5">English</span>
           <ThemeButton variant="sky" />
           <Link to="/login" className="rounded-full bg-cta px-5 py-[9px] font-semibold text-cta-fg hover:opacity-90">
             Login
