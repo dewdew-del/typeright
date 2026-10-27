@@ -131,9 +131,11 @@ function KeysScene({ night }: { night: boolean }) {
 
 /* 2. Aurora, colours flow like water */
 const BLOBS = [
-  { fx: 0.5, pos: { left: -30, top: 40 }, color: 'var(--ba)', x: 90, y: 30, d: 16 },
-  { fx: 0.8, pos: { left: '34%', top: '28%' }, color: 'var(--bb)', x: -60, y: -20, d: 19 },
-  { fx: 0.35, pos: { right: -20, top: 60 }, color: 'var(--bc)', x: -70, y: 40, d: 22 },
+  { fx: 0.9, pos: { left: '-8%', top: '2%' }, color: 'var(--ba)', x: '26vw', y: '10vh', d: 15 },
+  { fx: 1.3, pos: { left: '30%', top: '25%' }, color: 'var(--bb)', x: '-24vw', y: '-9vh', d: 19 },
+  { fx: 0.6, pos: { right: '-8%', top: '4%' }, color: 'var(--bc)', x: '-22vw', y: '14vh', d: 23 },
+  { fx: 1.1, pos: { left: '8%', bottom: '-10%' }, color: 'var(--bd)', x: '28vw', y: '-12vh', d: 17 },
+  { fx: 0.75, pos: { right: '6%', bottom: '-8%' }, color: 'var(--be)', x: '-26vw', y: '-10vh', d: 21 },
 ] as const
 
 function AuroraScene({ night }: { night: boolean }) {
@@ -149,8 +151,8 @@ function AuroraScene({ night }: { night: boolean }) {
     root.querySelectorAll<HTMLElement>('.wp-bw').forEach((el, i) => {
       const f = BLOBS[i].fx
       const c = cur.current[i]
-      c[0] += (target.current.x * f - c[0]) * 0.06
-      c[1] += (target.current.y * f - c[1]) * 0.06
+      c[0] += (target.current.x * f - c[0]) * 0.09
+      c[1] += (target.current.y * f - c[1]) * 0.09
       el.style.transform = `translate(${c[0]}px,${c[1]}px)`
       if (Math.abs(target.current.x * f - c[0]) > 0.3 || Math.abs(target.current.y * f - c[1]) > 0.3) again = true
     })
@@ -164,8 +166,9 @@ function AuroraScene({ night }: { night: boolean }) {
   usePointerFx(
     ref,
     (p, root) => {
-      target.current = { x: (p.px - 0.5) * 220, y: (p.py - 0.5) * 120 }
-      root.querySelector<HTMLElement>('.wp-water')?.style.setProperty('--hue', `${(p.px - 0.5) * 140}deg`)
+      // The colours follow the mouse across the whole scene and shift shade as it moves.
+      target.current = { x: (p.px - 0.5) * 520, y: (p.py - 0.5) * 300 }
+      root.querySelector<HTMLElement>('.wp-water')?.style.setProperty('--hue', `${(p.px - 0.5) * 240}deg`)
       root.style.setProperty('--mx', `${p.px * 100}%`)
       root.style.setProperty('--my', `${p.py * 100}%`)
       kick()
@@ -181,7 +184,7 @@ function AuroraScene({ night }: { night: boolean }) {
       <div className="wp-water">
         {BLOBS.map((b, i) => (
           <div key={i} className="wp-bw" style={{ position: 'absolute', ...b.pos }}>
-            <span className="wp-blob" style={{ background: b.color, '--x': `${b.x}px`, '--y': `${b.y}px`, '--d': `${b.d}s` } as CSSProperties} />
+            <span className="wp-blob" style={{ background: b.color, '--x': b.x, '--y': b.y, '--d': `${b.d}s` } as CSSProperties} />
           </div>
         ))}
       </div>
@@ -195,13 +198,41 @@ const STARS = [[12, 16], [30, 10], [48, 24], [62, 12], [78, 34], [90, 20]]
 
 function HillsScene({ night }: { night: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
+  const lastGrain = useRef({ x: -99, y: -99 })
   usePointerFx(
     ref,
-    (p, root) =>
+    (p, root) => {
       root.querySelectorAll<SVGElement>('.wp-hill').forEach((h) => {
         h.style.transform = `translateX(${-(p.px - 0.5) * Number(h.dataset.s)}px)`
-      }),
-    (root) => root.querySelectorAll<SVGElement>('.wp-hill').forEach((h) => (h.style.transform = '')),
+      })
+      // Sand blown off the cursor: a few grains drift away in the wind and fade.
+      if (Math.hypot(p.x - lastGrain.current.x, p.y - lastGrain.current.y) < 14) return
+      lastGrain.current = { x: p.x, y: p.y }
+      for (let i = 0; i < 3; i++) {
+        const grain = document.createElement('span')
+        grain.className = 'wp-grain'
+        grain.style.left = `${p.x + (Math.random() - 0.5) * 16}px`
+        grain.style.top = `${p.y + (Math.random() - 0.5) * 16}px`
+        const size = 2 + Math.random() * 3
+        grain.style.width = grain.style.height = `${size}px`
+        root.appendChild(grain)
+        const dx = 20 + Math.random() * 70
+        const dy = -25 + Math.random() * 70
+        grain
+          .animate(
+            [
+              { transform: 'translate(0, 0)', opacity: 0.95 },
+              { transform: `translate(${dx}px, ${dy}px)`, opacity: 0 },
+            ],
+            { duration: 700 + Math.random() * 600, easing: 'ease-out' },
+          )
+          .finished.then(() => grain.remove(), () => grain.remove())
+      }
+    },
+    (root) => {
+      root.querySelectorAll<SVGElement>('.wp-hill').forEach((h) => (h.style.transform = ''))
+      root.querySelectorAll('.wp-grain').forEach((g) => g.remove())
+    },
   )
   const hills = [
     { s: 8, h: '34%', c: 'var(--h1)', d: 'M0 90 C120 30 260 40 380 80 S650 40 800 70 V160 H0Z' },
