@@ -61,10 +61,10 @@ export const useSettings = create<SettingsState>()(
   ),
 )
 
-/** Which pop-up is open: settings dialog or profile side panel. */
+/** Which pop-up is open: settings dialog, profile side panel or leaderboard. */
 interface UiState {
-  panel: 'settings' | 'profile' | null
-  open: (panel: 'settings' | 'profile') => void
+  panel: 'settings' | 'profile' | 'leaderboard' | null
+  open: (panel: 'settings' | 'profile' | 'leaderboard') => void
   close: () => void
 }
 

@@ -7,11 +7,14 @@ import { useEffect, useRef, type ReactNode } from 'react'
 export function Overlay({
   title,
   side = false,
+  wide = false,
   onClose,
   children,
 }: {
   title: string
   side?: boolean
+  /** A wider centered dialog, for tables. */
+  wide?: boolean
   onClose: () => void
   children: ReactNode
 }) {
@@ -51,7 +54,7 @@ export function Overlay({
         aria-label={title}
         className={[
           'flex flex-col gap-5 overflow-y-auto border-border bg-surface text-text shadow-2xl outline-none',
-          side ? 'h-full w-full max-w-[400px] border-l p-6' : 'max-h-[90vh] w-full max-w-[460px] rounded-3xl border p-7',
+          side ? 'h-full w-full max-w-[400px] border-l p-6' : ['max-h-[90vh] w-full rounded-3xl border p-7', wide ? 'max-w-[780px]' : 'max-w-[460px]'].join(' '),
         ].join(' ')}
       >
         <div className="flex items-center justify-between gap-3">
