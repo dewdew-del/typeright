@@ -23,7 +23,7 @@ export const useSettings = create<SettingsState>()(
     (set) => ({
       theme: 'auto',
       sound: false,
-      soundPack: 'mechanical',
+      soundPack: 'default',
       showKeyboard: true,
       textSize: 'md',
       font: 'mono',
