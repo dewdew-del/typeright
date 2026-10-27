@@ -57,6 +57,16 @@ Visitors get the new version on their next visit (the service worker updates in 
    - Code-split the 690 KB app bundle
    - Rotate the Google client secret (it appeared in a screenshot)
 
+## Changes on 27 Oct 2026
+- Accuracy now counts the letters on screen, so deleting a wrong letter brings it back to 100% (free mode). Stop-on-error mode still counts every wrong key. Live in the code; deployed to the Edge Functions `issue-test` and `submit-result`. `submit-race` still has the old rule until it is redeployed. The website needs a Vercel deploy to show the fix.
+- Casual typing uses stories from the database: 101 English and 101 Filipino (`stories` table, seed text in `supabase/seed/`). Each player gets stories they have not finished; progress is in `story_progress`; when all stories in a language are done, the list starts again. Falls back to the old sentences if the table is empty. Offline practice still uses the bundled sentences.
+- Not signed-in practice does not use stories.
+
+## Postponed on purpose (UI and UX, do later)
+- Home page animation. Preview: https://claude.ai/artifact/TgZBPRpDsBGEM9HNaH3Cjp
+- Button click feedback (hover, press, spinner). Preview: https://claude.ai/artifact/WVM122GHrVpjuAF4BXXyK9
+- Focus now is on functionality.
+
 ## Other docs
 - `docs/PLAN.md`: the full plan and data model
 - `docs/SUPABASE_SETUP.md`: dashboard setup and deploy steps
