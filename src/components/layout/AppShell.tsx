@@ -21,6 +21,7 @@ const TITLES: [RegExp, string][] = [
   [/^\/login/, 'Log in'],
   [/^\/leaderboard/, 'Leaderboard'],
   [/^\/privacy/, 'Privacy policy'],
+  [/^\/admin/, 'Developer view'],
   [/^\/u\//, 'Profile'],
 ]
 
@@ -33,7 +34,7 @@ const BACK: [RegExp, string, string][] = [
   [/^\/friends\/?$/, '/play', 'Back to the menu'],
   [/^\/casual\/./, '/play', 'Back to the menu'],
   [/^\/casual\/?$/, '/play', 'Back to the menu'],
-  [/^\/(practice|leaderboard|login|privacy|u\/)/, '/play', 'Back to the menu'],
+  [/^\/(practice|leaderboard|login|privacy|admin|u\/)/, '/play', 'Back to the menu'],
 ]
 
 /** Each page gets its own tab title, which screen readers announce on navigation. */

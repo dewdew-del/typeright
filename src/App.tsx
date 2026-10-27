@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
+import { Admin } from './pages/Admin'
 import { usePresence } from './lib/presence'
 import { useApplyTheme } from './lib/theme'
 import { CasualPlay, CasualSetup } from './pages/Casual'
@@ -46,6 +47,7 @@ const router = createBrowserRouter([
       { path: 'profile', element: <OpenProfile /> },
       { path: 'leaderboard', element: <Leaderboard /> },
       { path: 'privacy', element: <Privacy /> },
+      { path: 'admin', element: <Admin /> },
       { path: 'u/:username', element: <PublicProfile /> },
       { path: '*', element: <ComingSoon title="Page not found" stage={1} /> },
     ],
