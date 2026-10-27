@@ -2,6 +2,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, json } from '../_shared/http.ts'
 import { CASUAL_CHARS, casualText } from '../_shared/casualText.ts'
+import { pickStories } from '../_shared/storyPick.ts'
 import { dailySeed, manilaDate, rankedText } from '../_shared/rankedText.ts'
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
@@ -35,11 +36,28 @@ Deno.serve(async (req) => {
   if ((count ?? 0) >= 20) return json({ error: 'Too many tests started. Take a short break.' }, 429)
 
   const seed = dailyDate ? dailySeed(dailyDate) : crypto.getRandomValues(new Uint32Array(1))[0]
-  const text =
-    kind === 'casual' ? casualText(seed, lang, CASUAL_CHARS[endless ? 'endless' : '2min']) : rankedText(seed, durationS)
+  let text: string
+  let storyIds: number[] = []
+  if (kind === 'casual') {
+    const minChars = CASUAL_CHARS[endless ? 'endless' : '2min']
+    // Stories this player has not finished come first; with no stories in the database, fall back to sentences.
+    const [{ data: stories }, { data: done }] = await Promise.all([
+      admin.from('stories').select('id, body').eq('lang', lang).order('id'),
+      admin.from('story_progress').select('story_id').eq('user_id', user.id),
+    ])
+    if (stories && stories.length > 0) {
+      const picked = pickStories(stories, new Set((done ?? []).map((r: { story_id: number }) => r.story_id)), seed, minChars)
+      text = picked.text
+      storyIds = picked.ids
+    } else {
+      text = casualText(seed, lang, minChars)
+    }
+  } else {
+    text = rankedText(seed, durationS)
+  }
   const { data, error } = await admin
     .from('test_issues')
-    .insert({ user_id: user.id, duration_s: durationS, text, kind, lang, daily_date: dailyDate })
+    .insert({ user_id: user.id, duration_s: durationS, text, kind, lang, daily_date: dailyDate, story_ids: storyIds })
     .select('id')
     .single()
   if (error || !data) return json({ error: 'Could not start the test.' }, 500)
