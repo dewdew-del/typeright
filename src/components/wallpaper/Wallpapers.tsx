@@ -196,6 +196,24 @@ function AuroraScene({ night }: { night: boolean }) {
 /* 3. Layered hills */
 const STARS = [[12, 16], [30, 10], [48, 24], [62, 12], [78, 34], [90, 20]]
 
+/** By day the sand shows up against what is under the mouse: dark sand on the pale sky, light sand on the hills. */
+const SAND_ON_SKY = '#b4713a'
+const SAND_ON_HILL = ['#fff0d2', '#ffe6c4', '#ffdcb4']
+
+function grainColorAt(root: HTMLElement, x: number, y: number): string {
+  const r = root.getBoundingClientRect()
+  const hills = root.querySelectorAll<SVGSVGElement>('.wp-hill')
+  for (let i = hills.length - 1; i >= 0; i--) {
+    const svg = hills[i]
+    const path = svg.querySelector('path')
+    const m = svg.getScreenCTM()
+    if (!path || !m) continue
+    const pt = new DOMPoint(r.left + x, r.top + y).matrixTransform(m.inverse())
+    if (path.isPointInFill(pt)) return SAND_ON_HILL[i]
+  }
+  return SAND_ON_SKY
+}
+
 function HillsScene({ night }: { night: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const lastGrain = useRef({ x: -99, y: -99 })
@@ -208,9 +226,11 @@ function HillsScene({ night }: { night: boolean }) {
       // Sand blown off the cursor: a few grains drift away in the wind and fade.
       if (Math.hypot(p.x - lastGrain.current.x, p.y - lastGrain.current.y) < 14) return
       lastGrain.current = { x: p.x, y: p.y }
+      const color = night ? null : grainColorAt(root, p.x, p.y)
       for (let i = 0; i < 3; i++) {
         const grain = document.createElement('span')
         grain.className = 'wp-grain'
+        if (color) grain.style.background = color
         grain.style.left = `${p.x + (Math.random() - 0.5) * 16}px`
         grain.style.top = `${p.y + (Math.random() - 0.5) * 16}px`
         const size = 2 + Math.random() * 3
