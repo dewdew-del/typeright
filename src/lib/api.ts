@@ -65,6 +65,8 @@ export interface BoardRow {
   wpm: number
   accuracy: number
   achieved_at: string
+  /** How long the run lasted (Endless boards show it). */
+  duration_ms: number | null
 }
 
 

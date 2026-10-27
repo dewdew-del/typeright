@@ -25,8 +25,8 @@ export const LIMITS = {
   /** The log can't cover more time than really passed since the test was issued. */
   clockSlackMs: 1500,
   maxIssueAgeMs: 10 * 60_000,
-  /** Endless (untimed) casual runs: at least a minute of typing to count, at most 30 minutes. */
-  endlessMinMs: 60_000,
+  /** Endless (untimed) casual runs: at least 10 minutes of typing to count, at most 30 minutes. */
+  endlessMinMs: 10 * 60_000,
   endlessMaxMs: 30 * 60_000,
   /** Accept but mark for review. */
   flagWpm: 180,
@@ -114,7 +114,7 @@ function flagsFor(summary: Summary): string[] {
 
 /**
  * Timed tests (`durationMs` > 0) are scored over the full time. `durationMs` 0 means Endless:
- * scored from first to last key, and it must last at least a minute.
+ * scored from first to last key, and it must last at least 10 minutes.
  */
 export function validateRanked(input: ValidationInput): Verdict {
   const log = parseLog(input.log)
@@ -183,7 +183,7 @@ export const REASON_TEXT: Record<string, string> = {
   expired: 'This test expired. Start a new one.',
   'after-time-limit': 'Keys were recorded after the time ran out.',
   'clock-mismatch': 'The timing did not match the real time that passed.',
-  'too-short': 'Type a bit more for the result to count (Endless needs at least 1 minute).',
+  'too-short': 'Type a bit more for the result to count (Endless needs at least 10 minutes).',
   'impossible-speed': 'That speed is not humanly possible, so it was not counted.',
   'robotic-timing': 'The key timing was too even to be a person typing.',
   'rate-limited': 'Too many tests in a short time. Take a short break.',

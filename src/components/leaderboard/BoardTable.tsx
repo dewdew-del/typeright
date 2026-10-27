@@ -2,11 +2,14 @@ import { Link } from 'react-router-dom'
 import { countryName } from '../../content/countries'
 import type { BoardRow } from '../../lib/api'
 import { useAuth } from '../../storage/authStore'
+import { formatTime } from '../../engine/stats'
 import { Avatar } from '../layout/Avatar'
 
-/** Ranked rows: rank, player (links to profile), country, WPM, accuracy. Your row is highlighted. */
-export function BoardTable({ rows, empty, error }: { rows: BoardRow[] | null; empty: string; error?: string | null }) {
+/** Ranked rows: rank, player (links to profile), country, WPM, accuracy, and the run's duration when asked. Your row is highlighted. */
+export function BoardTable({ rows, empty, error, showDuration = false }: { rows: BoardRow[] | null; empty: string; error?: string | null; showDuration?: boolean }) {
   const me = useAuth((s) => s.user?.id)
+  const cols = showDuration ? 6 : 5
+  const accuracyEdge = showDuration ? 'px-2' : 'pr-4 sm:px-5'
   return (
     <section aria-label="Rankings" className="overflow-x-auto rounded-3xl border border-border bg-surface">
       <table className="w-full text-left sm:min-w-[560px]">
@@ -16,15 +19,16 @@ export function BoardTable({ rows, empty, error }: { rows: BoardRow[] | null; em
             <th scope="col" className="px-2 py-3.5">Player</th>
             <th scope="col" className="hidden px-2 py-3.5 sm:table-cell">Country</th>
             <th scope="col" className="px-2 py-3.5 text-right">WPM</th>
-            <th scope="col" className="py-3.5 pl-2 pr-4 text-right sm:px-5">Accuracy</th>
+            <th scope="col" className={`py-3.5 pl-2 text-right ${accuracyEdge}`}>Accuracy</th>
+            {showDuration && <th scope="col" className="py-3.5 pl-2 pr-4 text-right sm:px-5">Duration</th>}
           </tr>
         </thead>
         <tbody>
           {rows === null && (
-            <tr><td colSpan={5} className="px-5 py-8 text-center text-muted">Loading…</td></tr>
+            <tr><td colSpan={cols} className="px-5 py-8 text-center text-muted">Loading…</td></tr>
           )}
           {rows?.length === 0 && (
-            <tr><td colSpan={5} className="px-5 py-10 text-center text-muted">{error ?? empty}</td></tr>
+            <tr><td colSpan={cols} className="px-5 py-10 text-center text-muted">{error ?? empty}</td></tr>
           )}
           {rows?.map((r) => (
             <tr key={r.user_id} className={['border-t border-border', r.user_id === me ? 'bg-accent-soft' : ''].join(' ')}>
@@ -40,7 +44,8 @@ export function BoardTable({ rows, empty, error }: { rows: BoardRow[] | null; em
               </td>
               <td className="hidden px-2 py-3.5 text-sm text-muted sm:table-cell">{countryName(r.country)}</td>
               <td className="px-2 py-3.5 text-right text-lg font-extrabold tabular-nums">{Math.round(r.wpm)}</td>
-              <td className="py-3.5 pl-2 pr-4 text-right tabular-nums sm:px-5">{r.accuracy}%</td>
+              <td className={`py-3.5 pl-2 text-right tabular-nums ${accuracyEdge}`}>{r.accuracy}%</td>
+              {showDuration && <td className="py-3.5 pl-2 pr-4 text-right tabular-nums sm:px-5">{r.duration_ms ? formatTime(r.duration_ms) : '–'}</td>}
             </tr>
           ))}
         </tbody>

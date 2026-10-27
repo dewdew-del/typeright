@@ -222,7 +222,10 @@ export function CasualPlay() {
         onRestart={again}
         onFinish={onFinish}
       />
-      <p className="text-center text-sm text-muted">Just start typing. Press Enter to start over.</p>
+      <p className="text-center text-sm text-muted">
+        Just start typing. Press Enter to start over.
+        {mode === 'endless' && online && ' Endless runs count for the leaderboard after 10 minutes.'}
+      </p>
     </main>
   )
 }

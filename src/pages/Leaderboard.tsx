@@ -49,8 +49,7 @@ export function Leaderboard() {
         ))}
       </div>
 
-      <BoardTable rows={rows} error={error} empty="No results yet. Play casual typing while signed in to be first!" />
-      <p className="text-center text-sm text-muted">Server-verified casual runs. Endless runs need at least 1 minute of typing.</p>
+      <BoardTable rows={rows} error={error} showDuration={mode === 'endless'} empty="No results yet. Play casual typing while signed in to be first!" />
     </main>
   )
 }

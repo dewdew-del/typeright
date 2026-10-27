@@ -127,13 +127,13 @@ describe('daily challenge text', () => {
 })
 
 describe('endless casual runs', () => {
-  it('needs at least a minute, then scores first-to-last key', async () => {
+  it('needs at least 10 minutes, then scores first-to-last key', async () => {
     const { casualText } = await import('./casualText')
     const text = casualText(9, 'en', 9000)
-    const short = typeText(text, human, 30_000)
-    expect(validateRanked({ text, log: short, durationMs: 0, issuedAt: 0, now: 40_000 }).reason).toBe('too-short')
-    const long = typeText(text, human, 90_000)
-    const v = validateRanked({ text, log: long, durationMs: 0, issuedAt: 0, now: 95_000 })
+    const short = typeText(text, human, 300_000)
+    expect(validateRanked({ text, log: short, durationMs: 0, issuedAt: 0, now: 310_000 }).reason).toBe('too-short')
+    const long = typeText(text, human, 660_000)
+    const v = validateRanked({ text, log: long, durationMs: 0, issuedAt: 0, now: 670_000 })
     expect(v.ok).toBe(true)
     expect(v.summary!.durationMs).toBe(long[long.length - 1].t)
   })
