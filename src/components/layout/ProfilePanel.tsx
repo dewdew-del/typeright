@@ -11,7 +11,7 @@ const input =
 
 /** Your profile as a side panel. Click the photo to change it. */
 export function ProfilePanel() {
-  const { panel, close } = useUi()
+  const { panel, close, open } = useUi()
   const { user, profile, isAnonymous } = useAuth()
   const navigate = useNavigate()
   const fileInput = useRef<HTMLInputElement>(null)
@@ -33,12 +33,14 @@ export function ProfilePanel() {
     e.preventDefault()
     if (!USERNAME_RE.test(username)) return setMsg({ ok: false, text: 'Username: 3 to 20 letters, numbers, dots, _ or -' })
     const err = await auth.updateProfile({ username, country })
+    open('profile') // saving never closes the panel, whatever happened while it waited for the server
     setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Saved.' })
   }
 
   const savePassword = async (e: FormEvent) => {
     e.preventDefault()
     const err = await auth.setPassword(password)
+    open('profile')
     setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Password saved.' })
     if (!err) setPassword('')
   }
@@ -48,6 +50,7 @@ export function ProfilePanel() {
     setBusyPhoto(true)
     const err = await auth.uploadAvatar(file)
     setBusyPhoto(false)
+    open('profile')
     setMsg(err ? { ok: false, text: err } : { ok: true, text: 'Photo updated.' })
   }
 
