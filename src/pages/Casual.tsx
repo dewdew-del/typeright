@@ -201,7 +201,10 @@ export function CasualPlay() {
 
   return (
     <main className="mx-auto flex max-w-[900px] flex-col gap-6 px-6 pb-16 pt-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <Link to={`/casual?lang=${lang}&length=${mode}`} className="rounded-full border border-border bg-surface px-5 py-2 text-sm font-bold hover:bg-surface-2">
+          Change settings
+        </Link>
         <button
           type="button"
           onClick={() => setFinishSignal((n) => n + 1)}

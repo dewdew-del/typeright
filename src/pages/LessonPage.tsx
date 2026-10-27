@@ -144,15 +144,15 @@ function IntroLesson({ lesson, onDone }: { lesson: LessonDef; onDone: () => void
       ) : (
         <>
           <p className="text-center text-[15px] leading-relaxed">
-            Rest your left fingers on <b>A S D F</b> and your right fingers on <b>J K L ;</b>. Your thumbs rest on the space bar.
-            Feel the small bumps on <b>F</b> and <b>J</b>: they let you find home without looking.
+            Left fingers on <b>A S D F</b>, right fingers on <b>J K L ;</b>, thumbs on the space bar.
+            Feel the bumps on <b>F</b> and <b>J</b> to find home without looking.
           </p>
           <Keyboard activeChar="f" />
         </>
       )}
       <p className="text-center text-sm text-muted"><b className="text-text">Tip:</b> {TIPS[lesson.tipId]}</p>
       <button type="button" onClick={onDone} className="self-center rounded-xl bg-accent px-10 py-3.5 text-base font-bold text-accent-contrast hover:opacity-90">
-        I'm ready
+        Next
       </button>
     </section>
   )
