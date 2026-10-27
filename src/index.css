@@ -121,10 +121,14 @@ body {
 /* Rectangular "wave" that draws the eye to a button: two rounded outlines spread out and fade. */
 .wave { position: relative; }
 .wave::before, .wave::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; border: 2px solid var(--accent);
-  pointer-events: none; opacity: 0; animation: wave 2.4s ease-out infinite;
+  /* A spreading shadow follows the rounded corners and animates smoothly, unlike resizing an outline. */
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none; animation: wave 2.4s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
 }
 .wave::after { animation-delay: 1.2s; }
-.wave:hover::before, .wave:hover::after, .wave:focus-visible::before, .wave:focus-visible::after { animation: none; opacity: 0; }
-@keyframes wave { 0% { inset: 0; opacity: .7; } 100% { inset: -16px; opacity: 0; } }
+.wave:hover::before, .wave:hover::after, .wave:focus-visible::before, .wave:focus-visible::after { animation: none; box-shadow: none; }
+@keyframes wave {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent); }
+  100% { box-shadow: 0 0 0 20px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
 @media (prefers-reduced-motion: reduce) { .wave::before, .wave::after { display: none; } }
