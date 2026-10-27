@@ -16,6 +16,8 @@ export function Overlay({
   children: ReactNode
 }) {
   const box = useRef<HTMLDivElement>(null)
+  // A click on the dark area closes only when it both starts and ends there, so a press inside the dialog never counts.
+  const pressedOnBackdrop = useRef(false)
 
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null
@@ -34,7 +36,11 @@ export function Overlay({
     <div
       className={['fixed inset-0 z-50 flex bg-black/40', side ? 'justify-end' : 'items-center justify-center p-4'].join(' ')}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        pressedOnBackdrop.current = e.target === e.currentTarget
+      }}
+      onClick={(e) => {
+        if (pressedOnBackdrop.current && e.target === e.currentTarget) onClose()
+        pressedOnBackdrop.current = false
       }}
     >
       <div
