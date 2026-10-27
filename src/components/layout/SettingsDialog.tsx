@@ -74,8 +74,10 @@ function Switch({ label, checked, onChange }: { label: string; checked: boolean;
 /** Settings as a pop-up, so you never leave what you were doing. */
 export function SettingsDialog() {
   const { panel, close } = useUi()
-  const { sound, soundPack, showKeyboard, textSize, font, set } = useSettings()
+  const { sound, soundPack: savedPack, showKeyboard, textSize, font, set } = useSettings()
   if (panel !== 'settings') return null
+  // A style that was removed (for example one chosen earlier) falls back to the default.
+  const soundPack: SoundPack = SOUND_PACKS.some((p) => p.value === savedPack) ? savedPack : 'default'
 
   return (
     <Overlay title="Settings" onClose={close}>

@@ -1,9 +1,9 @@
 /** Key sound styles. All are generated in the browser, so there are no audio files to download. */
 export const SOUND_PACKS = [
-  { value: 'mechanical', label: 'Mechanical (clicky)' },
+  { value: 'default', label: 'Default' },
+  { value: 'mechanical', label: 'Mechanical (extra clicky)' },
   { value: 'tactile', label: 'Tactile bump' },
   { value: 'thock', label: 'Deep thock' },
-  { value: 'creamy', label: 'Creamy' },
   { value: 'typewriter', label: 'Typewriter' },
   { value: 'bubble', label: 'Bubble pop' },
   { value: 'retro', label: 'Retro beep' },
@@ -80,7 +80,7 @@ function tone(x: Voice, at: number, type: OscillatorType, from: number, to: numb
  * quieter sound a moment later when the key comes back up. A wrong key gets a low thud. The space bar is
  * deeper and heavier, like a real keyboard.
  */
-export function playKeySound(correct: boolean, pack: SoundPack = 'mechanical', key?: string) {
+export function playKeySound(correct: boolean, pack: SoundPack = 'default', key?: string) {
   try {
     const { c, out } = audio()
     const x: Voice = { c, out, t: c.currentTime, v: 0.95 + Math.random() * 0.1 }
@@ -97,14 +97,16 @@ export function playKeySound(correct: boolean, pack: SoundPack = 'mechanical', k
     }
 
     switch (pack) {
-      case 'mechanical': // clicky blue switch: sharp click, clack, case body, tiny spring ping, key-up click
-        burst(x, 0, 'highpass', 3600 * d, 0.7, 0.55, 0.02)
-        burst(x, 0.004, 'bandpass', 1900 * d, 1.1, 0.55, 0.045)
-        tone(x, 0.004, 'sine', 200 * d, 105 * d, 0.55, 0.09)
-        burst(x, 0.004, 'lowpass', 650, 0.7, 0.35, 0.07)
-        tone(x, 0.01, 'triangle', 4300, 3700, 0.035, 0.06)
-        burst(x, 0.085, 'highpass', 3000 * d, 0.7, 0.22, 0.016)
-        tone(x, 0.085, 'sine', 150 * d, 100 * d, 0.14, 0.04)
+      case 'mechanical': // blue switch: a loud double click, then a clack, the case body and a spring ping
+        burst(x, 0, 'highpass', 4300 * d, 0.7, 0.8, 0.014)
+        burst(x, 0.011, 'bandpass', 3200 * d, 1.6, 0.7, 0.02)
+        burst(x, 0.017, 'bandpass', 1900 * d, 1.1, 0.5, 0.045)
+        tone(x, 0.017, 'sine', 200 * d, 105 * d, 0.5, 0.09)
+        burst(x, 0.017, 'lowpass', 650, 0.7, 0.3, 0.07)
+        tone(x, 0.004, 'triangle', 4600, 3900, 0.07, 0.07)
+        burst(x, 0.09, 'highpass', 3600 * d, 0.7, 0.3, 0.014)
+        burst(x, 0.093, 'bandpass', 2600 * d, 1.4, 0.2, 0.02)
+        tone(x, 0.09, 'sine', 150 * d, 100 * d, 0.14, 0.04)
         break
       case 'tactile': // brown switch: a soft bump, a rounder click, a firm landing
         burst(x, 0, 'bandpass', 1300 * d, 1, 0.45, 0.04)
@@ -118,12 +120,6 @@ export function playKeySound(correct: boolean, pack: SoundPack = 'mechanical', k
         burst(x, 0, 'lowpass', 420 * d, 0.6, 0.55, 0.09)
         burst(x, 0.002, 'bandpass', 1500, 0.9, 0.12, 0.02)
         tone(x, 0.09, 'sine', 95 * d, 60 * d, 0.2, 0.06)
-        break
-      case 'creamy': // smooth and muted, full of bass
-        tone(x, 0, 'sine', 175 * d, 78 * d, 0.7, 0.16)
-        tone(x, 0, 'triangle', 350 * d, 160 * d, 0.22, 0.1)
-        burst(x, 0, 'lowpass', 900 * d, 0.7, 0.35, 0.08)
-        burst(x, 0.085, 'lowpass', 700, 0.7, 0.1, 0.03)
         break
       case 'typewriter': // metal clack, a ring, and a thud
         burst(x, 0, 'bandpass', 3800 * d, 2, 0.7, 0.035)
@@ -139,9 +135,17 @@ export function playKeySound(correct: boolean, pack: SoundPack = 'mechanical', k
         tone(x, 0, 'square', 880 * d, 880 * d, 0.14, 0.055)
         tone(x, 0.055, 'square', 1320 * d, 1320 * d, 0.08, 0.04)
         break
-      default: // soft click
+      case 'soft': // soft click
         tone(x, 0, 'triangle', 620 * d, 600 * d, 0.2, 0.045)
         burst(x, 0, 'lowpass', 1200, 0.7, 0.12, 0.03)
+        break
+      default: // the standard keyboard sound: a clear click and clack with a solid body
+        burst(x, 0, 'highpass', 3400 * d, 0.7, 0.6, 0.016)
+        burst(x, 0.006, 'bandpass', 1800 * d, 1.1, 0.5, 0.04)
+        tone(x, 0.006, 'sine', 190 * d, 100 * d, 0.5, 0.085)
+        burst(x, 0.006, 'lowpass', 650, 0.7, 0.3, 0.06)
+        burst(x, 0.085, 'highpass', 3000 * d, 0.7, 0.2, 0.014)
+        tone(x, 0.085, 'sine', 150 * d, 100 * d, 0.12, 0.04)
     }
   } catch {
     // Audio can be unavailable (autoplay rules, old browsers); typing works without it.
