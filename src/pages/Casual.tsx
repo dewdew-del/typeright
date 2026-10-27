@@ -56,6 +56,12 @@ export function CasualSetup() {
         <Choice label="Length" value={length} onChange={setLength} options={CASUAL_MODES.map((m) => ({ value: m.value, label: m.label }))} />
       </div>
 
+      {length === 'endless' && (
+        <p role="note" className="rounded-2xl border border-border bg-accent-soft px-5 py-3 text-sm">
+          <b>Note:</b> Endless runs count for the leaderboard only when you type for at least <b>10 minutes</b>. Click Finish after that.
+        </p>
+      )}
+
       <div className="pt-2">
         <button
           type="button"
@@ -224,7 +230,7 @@ export function CasualPlay() {
       />
       <p className="text-center text-sm text-muted">
         Just start typing. Press Enter to start over.
-        {mode === 'endless' && online && ' Endless runs count for the leaderboard after 10 minutes.'}
+        {mode === 'endless' && ' Endless runs count for the leaderboard after 10 minutes.'}
       </p>
     </main>
   )
