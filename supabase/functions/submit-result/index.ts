@@ -1,6 +1,7 @@
 // Scores a ranked test from its keystroke log. The client sends only {issueId, log}: no WPM.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, json } from '../_shared/http.ts'
+import { finishedStoryIds, type Story } from '../_shared/storyPick.ts'
 import { validateRanked } from '../_shared/validation.ts'
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
@@ -11,6 +12,29 @@ const round1 = (x: number) => Math.round(x * 10) / 10
 
 // Leaderboard accuracy rule. Temporarily 0 (every verified run counts); the intended rule is 95.
 const MIN_ACCURACY = 0
+
+/** Remembers the stories typed to the end. When every story in the language is done, the list starts again. */
+async function markStoriesDone(userId: string, lang: string, storyIds: number[], typedChars: number) {
+  if (storyIds.length === 0) return
+  const { data: rows } = await admin.from('stories').select('id, body').in('id', storyIds)
+  const byId = new Map((rows ?? []).map((r: Story) => [r.id, r]))
+  const ordered = storyIds.map((id) => byId.get(id)).filter((r): r is Story => !!r)
+  const finished = finishedStoryIds(ordered, typedChars)
+  if (finished.length === 0) return
+  await admin
+    .from('story_progress')
+    .upsert(finished.map((story_id) => ({ user_id: userId, story_id })), { onConflict: 'user_id,story_id', ignoreDuplicates: true })
+
+  const [{ data: all }, { data: done }] = await Promise.all([
+    admin.from('stories').select('id').eq('lang', lang),
+    admin.from('story_progress').select('story_id').eq('user_id', userId),
+  ])
+  const doneIds = new Set((done ?? []).map((r: { story_id: number }) => r.story_id))
+  const allIds = (all ?? []).map((r: { id: number }) => r.id)
+  if (allIds.length > 0 && allIds.every((id: number) => doneIds.has(id))) {
+    await admin.from('story_progress').delete().eq('user_id', userId).in('story_id', allIds)
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -45,7 +69,7 @@ Deno.serve(async (req) => {
     .eq('id', issueId)
     .eq('user_id', user.id)
     .is('consumed_at', null)
-    .select('id, text, duration_s, lang, kind, daily_date, issued_at')
+    .select('id, text, duration_s, lang, kind, daily_date, issued_at, story_ids')
     .maybeSingle()
   if (!issue) {
     await attempt('rejected', 'used')
@@ -101,7 +125,11 @@ Deno.serve(async (req) => {
     .select('id')
     .single()
   if (error || !saved) return json({ ok: false, reason: 'server-error' }, 500)
-  await Promise.all([admin.from('result_logs').insert({ result_id: saved.id, log: body.log }), attempt('accepted')])
+  await Promise.all([
+    admin.from('result_logs').insert({ result_id: saved.id, log: body.log }),
+    attempt('accepted'),
+    markStoriesDone(user.id, issue.lang, issue.story_ids ?? [], s.correctChars),
+  ])
 
   const best = Math.max(prev?.wpm ?? 0, qualifies ? wpm : 0)
   let rank: number | null = null
