@@ -16,12 +16,19 @@ describe('replay: speed and accuracy', () => {
     expect(summary.complete).toBe(true)
   })
 
-  it('a corrected mistake keeps net WPM but lowers accuracy', () => {
-    const { state, summary } = replay('abc', keys(['a', 'x', BACKSPACE, 'b', 'c']))
-    expect(state.typed.join('')).toBe('abc')
-    expect(summary.correctChars).toBe(3)
+  it('a corrected mistake goes back to 100% once the wrong letter is deleted', () => {
+    const wrong = replay('abc', keys(['a', 'x']))
+    expect(wrong.summary.accuracy).toBeCloseTo(50, 5)
+    const fixed = replay('abc', keys(['a', 'x', BACKSPACE, 'b', 'c']))
+    expect(fixed.state.typed.join('')).toBe('abc')
+    expect(fixed.summary.correctChars).toBe(3)
+    expect(fixed.summary.accuracy).toBe(100)
+    expect(fixed.state.backspaces).toBe(1)
+  })
+
+  it('stop-on-error mode still counts every wrong key', () => {
+    const { summary } = replay('abc', keys(['a', 'x', 'b', 'c']), 'stop-on-error')
     expect(summary.accuracy).toBeCloseTo(75, 5)
-    expect(state.backspaces).toBe(1)
   })
 
   it('an uncorrected mistake in free mode counts against WPM and accuracy', () => {
