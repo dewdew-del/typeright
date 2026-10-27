@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
       raw_wpm: round1(s.rawWpm),
       accuracy,
       keystrokes: s.keystrokes,
+      typed_ms: Math.round(s.durationMs),
       flags: verdict.flags,
     })
     .select('id')
