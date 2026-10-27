@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom'
 import { Logo } from '../components/layout/Logo'
 import { ThemeButton } from '../components/layout/ThemeButton'
 import { WALLPAPERS, pickWallpaper } from '../components/wallpaper/Wallpapers'
+import { useActiveCount } from '../lib/presence'
 import { useResolvedTheme } from '../lib/theme'
 
 export function Landing() {
   // A different wallpaper on each visit; it follows the light or dark theme.
   const [index] = useState(pickWallpaper)
   const night = useResolvedTheme() === 'dark'
+  const active = useActiveCount((s) => s.count)
   const { Scene, ink } = WALLPAPERS[index]
   const colors = night ? ink.dark : ink.light
   const vars = { '--on-sky': colors.onSky, '--cta-bg': colors.cta, '--cta-fg': colors.ctaFg } as CSSProperties
@@ -50,6 +52,13 @@ export function Landing() {
           <span className="text-[15px] opacity-85">Free. No account needed.</span>
         </div>
       </div>
+
+      {active !== null && active > 0 && (
+        <p aria-live="polite" className="absolute bottom-0 left-0 z-10 flex items-center gap-2 px-5 py-4 text-sm sm:px-8" style={{ color: colors.foot }}>
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-[#34d399] shadow-[0_0_0_3px_rgba(52,211,153,0.3)]" />
+          {active} {active === 1 ? 'person' : 'people'} online
+        </p>
+      )}
 
       <footer className="absolute inset-x-0 bottom-0 z-10 px-5 py-4 text-right text-sm sm:px-8" style={{ color: colors.foot }}>
         <Link to="/privacy" className="underline underline-offset-2 opacity-90 hover:opacity-100">Privacy policy</Link>

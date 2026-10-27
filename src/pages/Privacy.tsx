@@ -32,6 +32,11 @@ export function Privacy() {
         </ul>
       </Section>
 
+      <Section title="People online">
+        The home page shows how many people have TypeRight open right now. This is a live counter only: each open tab
+        uses a random, temporary id that is forgotten when the tab closes. No names, accounts or locations are used.
+      </Section>
+
       <Section title="Where it is kept">
         Data is stored with Supabase (database and login) and the website is hosted by Vercel. Google is used only
         if you choose to log in with Google. Cloudflare may run a quick check that you are human when you log in.
