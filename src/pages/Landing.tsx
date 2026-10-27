@@ -1,12 +1,21 @@
+import { useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '../components/layout/Logo'
 import { ThemeButton } from '../components/layout/ThemeButton'
-import { SkyBody, SkyScene } from '../components/sky/SkyScene'
+import { WALLPAPERS, pickWallpaper } from '../components/wallpaper/Wallpapers'
+import { useResolvedTheme } from '../lib/theme'
 
 export function Landing() {
+  // A different wallpaper on each visit; it follows the light or dark theme.
+  const [index] = useState(pickWallpaper)
+  const night = useResolvedTheme() === 'dark'
+  const { Scene, ink } = WALLPAPERS[index]
+  const colors = night ? ink.dark : ink.light
+  const vars = { '--on-sky': colors.onSky, '--cta-bg': colors.cta, '--cta-fg': colors.ctaFg } as CSSProperties
+
   return (
-    <div className="relative min-h-full overflow-hidden text-on-sky">
-      <SkyScene />
+    <div className="relative min-h-full overflow-hidden text-on-sky" style={vars}>
+      <Scene night={night} />
 
       <header className="relative z-10 flex items-center justify-between px-5 py-5 sm:px-8">
         <Logo to="/" variant="sky" size="lg" />
@@ -24,11 +33,8 @@ export function Landing() {
         </div>
       </header>
 
-      <div className="relative z-[1] flex min-h-[520px] flex-wrap items-center px-5 pb-[150px] sm:px-8">
-        <div className="flex min-h-[260px] flex-[1_1_340px] items-center justify-center">
-          <SkyBody />
-        </div>
-        <div className="flex flex-[1_1_380px] flex-col items-start gap-7 py-2">
+      <div className="relative z-[1] flex min-h-[520px] items-center px-5 pb-24 sm:px-8">
+        <div className="flex max-w-[620px] flex-col items-start gap-7 py-2">
           <h1 className="m-0 text-4xl font-medium leading-[1.1] tracking-tight sm:text-[56px]">
             Learn to type.
             <br />
@@ -45,7 +51,7 @@ export function Landing() {
         </div>
       </div>
 
-      <footer className="absolute inset-x-0 bottom-0 z-10 px-5 py-4 text-right text-sm sm:px-8">
+      <footer className="absolute inset-x-0 bottom-0 z-10 px-5 py-4 text-right text-sm sm:px-8" style={{ color: colors.foot }}>
         <Link to="/privacy" className="underline underline-offset-2 opacity-90 hover:opacity-100">Privacy policy</Link>
       </footer>
     </div>
