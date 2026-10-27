@@ -176,7 +176,6 @@ function Lobby(props: {
 }) {
   const { room, players, online, meId, isHost } = props
   const [copied, setCopied] = useState(false)
-  const slots = Array.from({ length: 8 }, (_, i) => players[i] ?? null)
 
   return (
     <>
@@ -208,14 +207,24 @@ function Lobby(props: {
             <span className="rounded-full bg-accent-soft px-3 py-1.5 text-[13px] font-semibold text-accent">{room.text_type}</span>
             <span className="rounded-full bg-accent-soft px-3 py-1.5 text-[13px] font-semibold text-accent">{room.visibility === 'public' ? 'Public room' : 'Private room'}</span>
           </div>
+          <div className="flex flex-col items-start gap-3 border-t border-border pt-5">
+            {isHost ? (
+              <button type="button" onClick={props.onStart} disabled={players.length < 2} className="rounded-xl bg-accent px-10 py-[15px] text-lg font-bold text-accent-contrast hover:opacity-90 disabled:opacity-60">
+                Start race
+              </button>
+            ) : (
+              <span className="font-semibold text-muted">Waiting for the host to start…</span>
+            )}
+            {isHost && players.length < 2 && <span className="text-sm text-muted">Share the code: a race needs at least 2 players.</span>}
+            {props.error && <span role="alert" className="text-sm font-semibold text-bad">{props.error}</span>}
+          </div>
         </section>
         <section aria-label="Players" className="flex flex-[1.3_1_360px] flex-col gap-2.5 rounded-[22px] border border-border bg-surface px-6 py-5">
           <div className="flex items-baseline justify-between">
             <div className="font-bold">Players</div>
             <div className="text-sm text-muted">{players.length} of 8</div>
           </div>
-          {slots.map((p, i) =>
-            p ? (
+          {players.map((p) => (
               <div key={p.user_id} className={['flex items-center gap-3 rounded-[14px] px-3 py-2.5', p.user_id === meId ? 'border border-accent bg-accent-soft' : 'border border-border bg-bg'].join(' ')}>
                 <span className="relative">
                   <Avatar name={p.username} url={p.avatar_url} size={34} />
@@ -225,25 +234,8 @@ function Lobby(props: {
                 {p.user_id === room.host_id && <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-contrast">Host</span>}
                 {p.is_guest && <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-bold text-muted">Guest</span>}
               </div>
-            ) : (
-              <div key={`empty-${i}`} className="flex items-center gap-3 rounded-[14px] border border-dashed border-border px-3 py-2.5 text-muted">
-                <span className="grid h-[34px] w-[34px] place-items-center rounded-full border border-dashed border-border">+</span>
-                Waiting for a player
-              </div>
-            ),
-          )}
+          ))}
         </section>
-      </div>
-      <div className="flex flex-wrap items-center gap-4">
-        {isHost ? (
-          <button type="button" onClick={props.onStart} disabled={players.length < 2} className="rounded-xl bg-accent px-10 py-[15px] text-lg font-bold text-accent-contrast hover:opacity-90 disabled:opacity-60">
-            Start race
-          </button>
-        ) : (
-          <span className="font-semibold text-muted">Waiting for the host to start…</span>
-        )}
-        {isHost && players.length < 2 && <span className="text-sm text-muted">Share the code: a race needs at least 2 players.</span>}
-        {props.error && <span role="alert" className="text-sm font-semibold text-bad">{props.error}</span>}
       </div>
     </>
   )
