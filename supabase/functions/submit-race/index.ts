@@ -1,6 +1,7 @@
 // Records a player's race from their keystroke log. Finishing order comes from the server clock.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, json } from '../_shared/http.ts'
+import { MIN_RACE_ACCURACY } from '../_shared/scoring.ts'
 import { validateRace } from '../_shared/validation.ts'
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
@@ -53,7 +54,8 @@ Deno.serve(async (req) => {
     return json({ ok: false, reason: verdict.reason }, 422)
   }
 
-  const finished = verdict.complete === true
+  // Typing the whole text is not enough: it must be done with real accuracy, or mashing keys would win.
+  const finished = verdict.complete === true && verdict.summary.accuracy >= MIN_RACE_ACCURACY
   // Primary key (room, user) makes a second submission fail: one result per player per round.
   const { error } = await admin.from('race_results').insert({
     room_id: room.id,

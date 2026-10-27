@@ -161,3 +161,11 @@ export function replay(target: string, log: Keystroke[], mode: TypingMode = 'fre
   for (const ks of log) applyKeystroke(state, ks)
   return { state, summary: summarize(state, durationMs) }
 }
+
+/** A race run only counts as finished with at least this accuracy, so mashing keys to reach the end gets nowhere. */
+export const MIN_RACE_ACCURACY = 90
+
+/** Races are ranked on this overall score: net WPM times accuracy (one decimal). Speed alone cannot win. */
+export function raceScore(wpm: number, accuracy: number): number {
+  return Math.round((wpm * accuracy) / 10) / 10
+}
