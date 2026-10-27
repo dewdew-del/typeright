@@ -27,6 +27,17 @@ export function keyLabel(char: string): string {
   return char === ' ' ? 'Space' : char.toUpperCase()
 }
 
+/** Accuracy cut down to one decimal, so 99.8 stays 99.8 and only a truly perfect run reads 100. */
+export function floorAccuracy(a: number): number {
+  return Math.floor(a * 10 + 1e-9) / 10
+}
+
+/** Accuracy for display: "100" when perfect, otherwise one decimal ("99.8"). */
+export function formatAccuracy(a: number): string {
+  const v = floorAccuracy(a)
+  return Number.isInteger(v) ? String(v) : v.toFixed(1)
+}
+
 /** m:ss for a duration in ms. */
 export function formatTime(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000))

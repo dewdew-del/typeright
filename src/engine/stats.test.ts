@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatTime, keyLabel, slowestKeys, topMissedKeys, wpmSeries } from './stats'
+import { floorAccuracy, formatAccuracy, formatTime, keyLabel, slowestKeys, topMissedKeys, wpmSeries } from './stats'
 
 describe('stats helpers', () => {
   it('ranks keys by misses, then miss rate, and skips clean keys', () => {
@@ -38,5 +38,15 @@ describe('slowestKeys and wpmSeries', () => {
     expect(series).toHaveLength(2)
     expect(series[0]).toBeCloseTo(120, 5) // 10 chars = 2 words in 1 s
     expect(series[1]).toBeCloseTo(60, 5) // same 2 words over 2 s
+  })
+})
+
+describe('accuracy display', () => {
+  it('never rounds up to 100', () => {
+    expect(formatAccuracy(99.8)).toBe('99.8')
+    expect(formatAccuracy(99.96)).toBe('99.9')
+    expect(formatAccuracy(100)).toBe('100')
+    expect(formatAccuracy(97)).toBe('97')
+    expect(floorAccuracy(99.99)).toBe(99.9)
   })
 })

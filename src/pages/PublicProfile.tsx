@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/layout/Avatar'
 import { countryName } from '../content/countries'
 import { BADGES } from '../content/badges'
+import { formatAccuracy } from '../engine/stats'
 import { getBadges, getPublicProfile, type ProfileStats, type RecentResult } from '../lib/api'
 
 export function PublicProfile() {
@@ -56,7 +57,7 @@ export function PublicProfile() {
         <Stat label="Best 2 min" value={s.best_2min !== null ? `${Math.round(s.best_2min)} WPM` : '–'} accent />
         <Stat label="Best Endless" value={s.best_endless !== null ? `${Math.round(s.best_endless)} WPM` : '–'} />
         <Stat label="Tests taken" value={String(s.tests_taken)} />
-        <Stat label="Average accuracy" value={s.avg_accuracy !== null ? `${Math.round(s.avg_accuracy)}%` : '–'} />
+        <Stat label="Average accuracy" value={s.avg_accuracy !== null ? `${formatAccuracy(s.avg_accuracy)}%` : '–'} />
         <Stat label="Practice streak" value={`${s.streak_current} ${s.streak_current === 1 ? 'day' : 'days'}`} />
         <Stat label="Best streak" value={`${s.streak_best} ${s.streak_best === 1 ? 'day' : 'days'}`} />
       </section>

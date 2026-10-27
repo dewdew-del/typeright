@@ -9,7 +9,7 @@ import { targetForChar } from '../layouts/qwerty'
 import { FINGER_NAMES } from '../layouts/types'
 import { buildDrill, weakWeights } from '../engine/drill'
 import { currentLesson, lessonStatus, starsFor } from '../engine/progress'
-import { formatTime } from '../engine/stats'
+import { floorAccuracy, formatTime } from '../engine/stats'
 import { touchStreak } from '../lib/api'
 import { useProgress } from '../storage/progressStore'
 import { useSettings } from '../stores/settings'
@@ -74,7 +74,7 @@ function Lesson({ lesson }: { lesson: LessonDef }) {
   const onFinish = useCallback(
     (r: TypingResult) => {
       const wpm = Math.round(r.summary.wpm)
-      const accuracy = Math.round(r.summary.accuracy)
+      const accuracy = floorAccuracy(r.summary.accuracy)
       record(lesson, wpm, accuracy, r.keyStats)
       void touchStreak()
       setResult({ wpm, accuracy, stars: starsFor(lesson, wpm, accuracy), durationMs: r.summary.durationMs })

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { formatTime, keyLabel, slowestKeys, topMissedKeys, wpmSeries } from '../../engine/stats'
+import { formatAccuracy, formatTime, keyLabel, slowestKeys, topMissedKeys, wpmSeries } from '../../engine/stats'
 import type { TypingResult } from '../typing/TypingArea'
 
 /** Results for an unranked attempt: speed, accuracy, time, speed chart and keys to practice. */
@@ -18,7 +18,7 @@ export function ResultsView({ result, children }: { result: TypingResult; childr
             {Math.round(summary.wpm)} <span className="text-xl font-bold text-muted">WPM</span>
           </div>
         </div>
-        <Tile label="Accuracy" value={`${Math.round(summary.accuracy)}%`} />
+        <Tile label="Accuracy" value={`${formatAccuracy(summary.accuracy)}%`} />
         <Tile label="Time" value={formatTime(summary.durationMs)} />
       </section>
 

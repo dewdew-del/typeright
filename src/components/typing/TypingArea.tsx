@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type 
 import type { Keystroke, KeyStat, Summary, TypingMode } from '../../../supabase/functions/_shared/scoring'
 import { keyFromEvent } from '../../engine/keys'
 import { elapsedMs, type TypingSession } from '../../engine/session'
-import { formatTime } from '../../engine/stats'
+import { formatAccuracy, formatTime } from '../../engine/stats'
 import { useTypingSession } from '../../engine/useTypingSession'
 import { playKeySound } from '../../lib/sound'
 import { useSettings, type TextSize } from '../../stores/settings'
@@ -131,7 +131,7 @@ export function TypingArea({
     <div className="flex flex-col gap-7">
       <div className="flex flex-wrap justify-center gap-10" aria-live="off">
         <Stat value={String(Math.round(stats.wpm))} label="WPM" accent />
-        <Stat value={`${Math.round(stats.accuracy)}%`} label="Accuracy" />
+        <Stat value={`${formatAccuracy(stats.accuracy)}%`} label="Accuracy" />
         <Stat value={clock} label={timeLimitMs === undefined ? (getMore ? 'Endless' : 'Time') : 'Left'} />
       </div>
 

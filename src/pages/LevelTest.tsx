@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { TypingArea, type TypingResult } from '../components/typing/TypingArea'
 import { allowedKeys, STAGE_NAMES, STAGE_TARGET_ACCURACY, STAGE_TARGET_WPM } from '../content/lessons/catalog'
 import { buildDrill } from '../engine/drill'
+import { floorAccuracy, formatAccuracy } from '../engine/stats'
 import { LEVEL_STEPS, passedStages, placement, STEP_MS, stepCleared, stepLesson, type StepResult } from '../engine/levelTest'
 import { useProgress } from '../storage/progressStore'
 
@@ -85,7 +86,7 @@ function TestRun({ onDone }: { onDone: (results: StepResult[]) => void }) {
 
   const onFinish = useCallback(
     (r: TypingResult) => {
-      const res = { wpm: Math.round(r.summary.wpm), accuracy: Math.round(r.summary.accuracy) }
+      const res = { wpm: Math.round(r.summary.wpm), accuracy: floorAccuracy(r.summary.accuracy) }
       const all = [...results, res]
       if (stepCleared(current, res) && step + 1 < LEVEL_STEPS.length) {
         setResults(all)
@@ -166,7 +167,7 @@ function Result({ results, onRetake }: { results: StepResult[]; onRetake: () => 
         </div>
         <div className="mt-4 flex justify-center gap-8">
           <div><div className="text-3xl font-extrabold text-accent">{avg('wpm')}</div><div className="text-[13px] font-semibold text-muted">WPM</div></div>
-          <div><div className="text-3xl font-extrabold">{avg('accuracy')}%</div><div className="text-[13px] font-semibold text-muted">Accuracy</div></div>
+          <div><div className="text-3xl font-extrabold">{results.length ? formatAccuracy(results.reduce((s, r) => s + r.accuracy, 0) / results.length) : 0}%</div><div className="text-[13px] font-semibold text-muted">Accuracy</div></div>
         </div>
       </section>
 
