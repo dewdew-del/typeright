@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { SoundPack } from '../lib/sound'
 
 /** 'auto' follows the visitor's clock (light from 06:00 to 17:59); light and dark force a theme. */
 export type ThemeMode = 'auto' | 'light' | 'dark'
@@ -10,6 +11,7 @@ export type TypingFont = 'mono' | 'sans' | 'serif'
 interface SettingsState {
   theme: ThemeMode
   sound: boolean
+  soundPack: SoundPack
   showKeyboard: boolean
   textSize: TextSize
   font: TypingFont
@@ -21,6 +23,7 @@ export const useSettings = create<SettingsState>()(
     (set) => ({
       theme: 'auto',
       sound: false,
+      soundPack: 'mechanical',
       showKeyboard: true,
       textSize: 'md',
       font: 'mono',
