@@ -32,8 +32,6 @@ function JourneyBanner() {
 export function Journey() {
   const progress = useProgress((s) => s.progress)
   const current = currentLesson(LESSONS, progress)
-  // New players get nudged toward Test skill until they have passed a lesson or tested out of a stage.
-  const isNew = progress.testedOutStages.length === 0 && !Object.values(progress.lessons).some((l) => l.passed)
 
   // Land on the lesson in progress.
   useEffect(() => {
@@ -51,7 +49,7 @@ export function Journey() {
         <JourneyBanner />
         <div className="relative flex flex-wrap items-center gap-x-6 gap-y-4 px-9 py-10">
           <h1 className="text-[34px] font-bold tracking-tight">Journey</h1>
-          <Link to="/journey/test" className={['rounded-xl border border-border bg-surface px-[18px] py-2.5 text-[15px] font-bold hover:bg-surface-2', isNew ? 'wave' : ''].join(' ')}>
+          <Link to="/journey/test" className="wave rounded-xl border border-border bg-surface px-[18px] py-2.5 text-[15px] font-bold hover:bg-surface-2">
             Test skill
           </Link>
         </div>
