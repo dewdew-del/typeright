@@ -31,7 +31,7 @@ const BACK: [RegExp, string, string][] = [
   [/^\/friends\/./, '/friends', 'Back to Play with friends'],
   [/^\/race\//, '/friends', 'Back to Play with friends'],
   [/^\/friends\/?$/, '/play', 'Back to the menu'],
-  [/^\/casual\/./, '/casual', 'Back to Casual typing'],
+  [/^\/casual\/./, '/play', 'Back to the menu'],
   [/^\/casual\/?$/, '/play', 'Back to the menu'],
   [/^\/(practice|leaderboard|login|privacy|u\/)/, '/play', 'Back to the menu'],
 ]

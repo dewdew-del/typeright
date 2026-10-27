@@ -1,7 +1,7 @@
 // Starts a ranked test or today's daily challenge: the server picks the text and remembers when.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, json } from '../_shared/http.ts'
-import { CASUAL_CHARS, casualText } from '../_shared/casualText.ts'
+import { CASUAL_CHARS, CASUAL_SECONDS, casualText, type CasualLength } from '../_shared/casualText.ts'
 import { pickStories } from '../_shared/storyPick.ts'
 import { dailySeed, manilaDate, rankedText } from '../_shared/rankedText.ts'
 
@@ -21,9 +21,9 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}))
   const kind = body?.kind === 'daily' ? 'daily' : body?.kind === 'casual' ? 'casual' : 'test'
   const lang = body?.lang === 'fil' ? 'fil' : 'en'
-  const endless = body?.mode === 'endless'
-  // Casual: 2 min (120) or Endless (0). Daily: always 60 s, same text for everyone that day.
-  const durationS = kind === 'casual' ? (endless ? 0 : 120) : kind === 'daily' ? 60 : body?.duration === 60 ? 60 : 30
+  // Casual: 10 s, 30 s, 1 min, 2 min (the default) or Endless (0). Daily: always 60 s, same text for everyone that day.
+  const length: CasualLength = typeof body?.mode === 'string' && Object.hasOwn(CASUAL_SECONDS, body.mode) ? body.mode : '2min'
+  const durationS = kind === 'casual' ? CASUAL_SECONDS[length] : kind === 'daily' ? 60 : body?.duration === 60 ? 60 : 30
   const dailyDate = kind === 'daily' ? manilaDate() : null
 
   // Starting tests is cheap, but not unlimited.
@@ -33,13 +33,13 @@ Deno.serve(async (req) => {
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .gte('issued_at', since)
-  if ((count ?? 0) >= 20) return json({ error: 'Too many tests started. Take a short break.' }, 429)
+  if ((count ?? 0) >= 60) return json({ error: 'Too many tests started. Take a short break.' }, 429)
 
   const seed = dailyDate ? dailySeed(dailyDate) : crypto.getRandomValues(new Uint32Array(1))[0]
   let text: string
   let storyIds: number[] = []
   if (kind === 'casual') {
-    const minChars = CASUAL_CHARS[endless ? 'endless' : '2min']
+    const minChars = CASUAL_CHARS[length]
     // Stories this player has not finished come first; with no stories in the database, fall back to sentences.
     const [{ data: stories }, { data: done }] = await Promise.all([
       admin.from('stories').select('id, body').eq('lang', lang).order('id'),

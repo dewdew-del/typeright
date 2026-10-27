@@ -38,7 +38,15 @@ async function call<T>(name: string, body: Record<string, unknown>): Promise<{ d
   return { error: 'Could not reach the server. Check your connection and try again.' }
 }
 
-export type CasualMode = '2min' | 'endless'
+/** Casual run lengths: seconds on the clock, or Endless. */
+export const CASUAL_MODES = [
+  { value: '10s', label: '10 s', ms: 10_000 },
+  { value: '30s', label: '30 s', ms: 30_000 },
+  { value: '1min', label: '1 min', ms: 60_000 },
+  { value: '2min', label: '2 min', ms: 120_000 },
+  { value: 'endless', label: 'Endless', ms: undefined },
+] as const
+export type CasualMode = (typeof CASUAL_MODES)[number]['value']
 export type Lang = 'en' | 'fil'
 
 /** Starts a casual run that counts for the leaderboard: the server picks the sentences. */
@@ -59,11 +67,11 @@ export interface BoardRow {
   achieved_at: string
 }
 
-export type Period = 'all' | 'weekly' | 'daily'
 
-export async function getCasualBoard(mode: CasualMode, lang: Lang, period: Period, country: string | null) {
+/** One board per length: every language, all time, all countries. */
+export async function getCasualBoard(mode: CasualMode) {
   if (!supabase) return { rows: [] as BoardRow[], error: 'Leaderboards are not set up yet.' }
-  const { data, error } = await supabase.rpc('get_casual_board', { p_mode: mode, p_lang: lang, p_period: period, p_country: country, p_limit: 50 })
+  const { data, error } = await supabase.rpc('get_casual_board', { p_mode: mode, p_lang: null, p_period: 'all', p_country: null, p_limit: 50 })
   return { rows: (data ?? []) as BoardRow[], error: error ? 'Could not load the leaderboard.' : null }
 }
 

@@ -6,12 +6,19 @@ import { Choice } from '../components/ui/Choice'
 import { SENTENCES_EN } from '../content/sentences/en'
 import { SENTENCES_FIL } from '../content/sentences/fil'
 import { createRng } from '../engine/rng'
-import { issueCasual, submitResult, touchStreak, type IssuedTest, type RankedResult } from '../lib/api'
+import { CASUAL_MODES, issueCasual, submitResult, touchStreak, type CasualMode, type IssuedTest, type RankedResult } from '../lib/api'
 import { useAuth } from '../storage/authStore'
 import { useProgress } from '../storage/progressStore'
 
 type Lang = 'en' | 'fil'
-type Length = '2min' | 'endless'
+
+/** Casual typing starts straight away in English, 30 seconds. */
+const DEFAULT_MODE: CasualMode = '30s'
+
+function readSettings(params: URLSearchParams): { lang: Lang; mode: CasualMode } {
+  const mode = CASUAL_MODES.find((m) => m.value === params.get('length'))?.value ?? DEFAULT_MODE
+  return { lang: params.get('lang') === 'fil' ? 'fil' : 'en', mode }
+}
 
 function CasualBanner() {
   const row1 = [500, 540, 580, 620, 660, 700, 740, 780]
@@ -30,8 +37,10 @@ function CasualBanner() {
 /** Setup: language and length only. The text is always sentences. */
 export function CasualSetup() {
   const navigate = useNavigate()
-  const [lang, setLang] = useState<Lang>('en')
-  const [length, setLength] = useState<Length>('endless')
+  const [params] = useSearchParams()
+  const initial = readSettings(params)
+  const [lang, setLang] = useState<Lang>(initial.lang)
+  const [length, setLength] = useState<CasualMode>(initial.mode)
 
   return (
     <main className="mx-auto flex max-w-[960px] flex-col gap-7 px-6 pb-16 pt-2">
@@ -44,7 +53,7 @@ export function CasualSetup() {
 
       <div className="flex flex-wrap gap-x-14 gap-y-7">
         <Choice label="Language" value={lang} onChange={setLang} options={[{ value: 'en', label: 'English' }, { value: 'fil', label: 'Filipino' }]} />
-        <Choice label="Length" value={length} onChange={setLength} options={[{ value: '2min', label: '2 min' }, { value: 'endless', label: 'Endless' }]} />
+        <Choice label="Length" value={length} onChange={setLength} options={CASUAL_MODES.map((m) => ({ value: m.value, label: m.label }))} />
       </div>
 
       <div className="pt-2">
@@ -75,8 +84,8 @@ function sentenceFeed(lang: Lang, seed: number) {
 
 export function CasualPlay() {
   const [params] = useSearchParams()
-  const lang: Lang = params.get('lang') === 'fil' ? 'fil' : 'en'
-  const timed = params.get('length') === '2min'
+  const { lang, mode } = readSettings(params)
+  const timeLimitMs = CASUAL_MODES.find((m) => m.value === mode)?.ms
   const addKeyStats = useProgress((s) => s.addKeyStats)
   const signedIn = useAuth((s) => s.user !== null)
   // Offline or server trouble: let a signed-in player keep typing without the leaderboard.
@@ -99,7 +108,7 @@ export function CasualPlay() {
     let live = true
     setIssued(null)
     setIssueError(null)
-    void issueCasual(lang, timed ? '2min' : 'endless').then(({ data, error }) => {
+    void issueCasual(lang, mode).then(({ data, error }) => {
       if (!live) return
       if (data) setIssued(data)
       else setIssueError(error ?? 'Could not start a leaderboard run.')
@@ -107,7 +116,7 @@ export function CasualPlay() {
     return () => {
       live = false
     }
-  }, [online, lang, timed, round])
+  }, [online, lang, mode, round])
 
   const onFinish = useCallback(
     async (r: TypingResult) => {
@@ -128,33 +137,43 @@ export function CasualPlay() {
     setRound(Math.floor(Math.random() * 2 ** 31))
   }
 
+  // Enter is the shortcut for Try again on the results screen.
+  useEffect(() => {
+    if (!result) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || e.repeat) return
+      if ((e.target as HTMLElement | null)?.closest('a, button, input, select, textarea')) return
+      e.preventDefault()
+      again()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [result])
+
   if (result) {
     return (
-      <main className="mx-auto flex max-w-[860px] flex-col gap-5 px-6 pb-16 pt-2">
-        <h1 className="text-3xl font-bold tracking-tight">Results</h1>
-        {online && issued && (
-          <p role="status" className="rounded-2xl border border-border bg-surface px-5 py-4 text-sm font-semibold">
-            {!verified
-              ? 'Checking your result with the server…'
-              : verified.error
-                ? `Not counted for the leaderboard: ${verified.error}`
-                : `Verified by the server: ${Math.round(verified.result!.wpm)} WPM, ${verified.result!.accuracy}%` +
-                  (verified.result!.personalBest ? ' · New personal best' : '') +
-                  (verified.result!.qualifies && verified.result!.rank !== null ? ` · #${verified.result!.rank} on the leaderboard` : '')}
+      <main className="mx-auto flex max-w-[760px] flex-col gap-4 px-6 pb-16 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">Results</h1>
+          <div className="flex flex-wrap gap-2.5">
+            <button type="button" onClick={again} className="rounded-xl bg-accent px-6 py-2.5 text-[15px] font-bold text-accent-contrast hover:opacity-90">
+              Try again <span className="ml-1 text-xs font-semibold opacity-80">Enter</span>
+            </button>
+            <Link to={`/casual?lang=${lang}&length=${mode}`} className="rounded-xl border border-border bg-surface px-5 py-2.5 text-[15px] font-bold hover:bg-surface-2">Change settings</Link>
+          </div>
+        </div>
+        {online && issued && verified?.error && (
+          <p role="status" className="rounded-2xl border border-border bg-surface px-5 py-3 text-sm font-semibold">
+            Not counted for the leaderboard: {verified.error}
           </p>
         )}
         {!signedIn && (
-          <p className="rounded-2xl border border-border bg-accent-soft px-5 py-4 text-sm">
+          <p className="rounded-2xl border border-border bg-accent-soft px-5 py-3 text-sm">
             Practice only. <Link to="/login" className="font-bold text-accent">Log in</Link> to get your runs on the leaderboard.
           </p>
         )}
         <ResultsView result={result}>
           <Link to="/practice" className="self-start text-sm font-bold text-accent">Practice your weak keys</Link>
-          <div className="flex flex-wrap gap-3 pt-1">
-            <button type="button" onClick={again} className="rounded-xl bg-accent px-8 py-3.5 text-[17px] font-bold text-accent-contrast hover:opacity-90">Try again</button>
-            <Link to="/casual" className="rounded-xl border border-border bg-surface px-7 py-3.5 text-[17px] font-bold hover:bg-surface-2">Change settings</Link>
-            <Link to="/play" className="rounded-xl border border-border bg-surface px-7 py-3.5 text-[17px] font-bold hover:bg-surface-2">Back to menu</Link>
-          </div>
         </ResultsView>
       </main>
     )
@@ -194,12 +213,13 @@ export function CasualPlay() {
       <TypingArea
         key={issued?.issueId ?? round}
         target={issued?.text ?? firstText}
-        timeLimitMs={timed ? 120_000 : undefined}
+        timeLimitMs={timeLimitMs}
         getMore={issued ? undefined : feed}
         finishSignal={finishSignal}
+        onRestart={again}
         onFinish={onFinish}
       />
-      <p className="text-center text-sm text-muted">Just start typing. Click Finish when you are done.</p>
+      <p className="text-center text-sm text-muted">Just start typing. Press Enter to start over.</p>
     </main>
   )
 }
