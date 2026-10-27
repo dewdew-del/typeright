@@ -24,6 +24,18 @@ const TITLES: [RegExp, string][] = [
   [/^\/u\//, 'Profile'],
 ]
 
+/** Where the back button goes from each page: one step up the menu. No button on the mode menu itself. */
+const BACK: [RegExp, string, string][] = [
+  [/^\/journey\/./, '/journey', 'Back to Journey'],
+  [/^\/journey\/?$/, '/play', 'Back to the menu'],
+  [/^\/friends\/./, '/friends', 'Back to Play with friends'],
+  [/^\/race\//, '/friends', 'Back to Play with friends'],
+  [/^\/friends\/?$/, '/play', 'Back to the menu'],
+  [/^\/casual\/./, '/casual', 'Back to Casual typing'],
+  [/^\/casual\/?$/, '/play', 'Back to the menu'],
+  [/^\/(practice|leaderboard|login|privacy|u\/)/, '/play', 'Back to the menu'],
+]
+
 /** Each page gets its own tab title, which screen readers announce on navigation. */
 function usePageTitle() {
   const { pathname } = useLocation()
@@ -46,7 +58,10 @@ export function AppShell() {
         Skip to content
       </a>
       <header className="flex items-center justify-between gap-3 px-4 py-5 sm:px-8">
-        <Logo to="/play" />
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <Logo to="/" />
+        </div>
         <div className="flex items-center gap-2.5">
           <Link
             to="/leaderboard"
@@ -80,6 +95,25 @@ export function AppShell() {
       <SettingsDialog />
       <ProfilePanel />
     </div>
+  )
+}
+
+/** Arrow to the page one step up, shown on every page below the mode menu. */
+function BackButton() {
+  const { pathname } = useLocation()
+  const back = BACK.find(([re]) => re.test(pathname))
+  if (!back) return null
+  return (
+    <Link
+      to={back[1]}
+      aria-label={back[2]}
+      title={back[2]}
+      className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full border border-border bg-surface text-text hover:bg-surface-2"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+    </Link>
   )
 }
 
