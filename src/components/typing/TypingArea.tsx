@@ -30,6 +30,8 @@ interface Props {
   getMore?: () => string
   /** Increment to end the session now ("Finish"). */
   finishSignal?: number
+  /** Enter calls this (the shortcut for starting over). */
+  onRestart?: () => void
   /** Ignore keys (e.g. during a race countdown). */
   locked?: boolean
   /** Called when progress changes: correct characters so far and live WPM. */
@@ -59,6 +61,7 @@ export function TypingArea({
   getMore,
   finishSignal = 0,
   locked = false,
+  onRestart,
   onProgress,
   onFinish,
 }: Props) {
@@ -98,6 +101,11 @@ export function TypingArea({
   }, [ended, session, stats, onFinish, text, mode])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' && onRestart && !e.repeat) {
+      e.preventDefault()
+      onRestart()
+      return
+    }
     const key = keyFromEvent(e.nativeEvent)
     if (key === null) return
     e.preventDefault() // keep Space from scrolling and Backspace from navigating

@@ -22,17 +22,6 @@ function newAttempt(lesson: LessonDef) {
   return { seed, text: buildDrill({ lesson, allowed: allowedKeys(lesson), weak, seed }) }
 }
 
-/** "Type E with your left middle finger" for each new key. */
-function keyInstructions(lesson: LessonDef): string[] {
-  return lesson.newKeys.map((k) => {
-    if (k === SHIFT) return 'Hold Left Shift with your left pinky to type capitals with your right hand.'
-    if (k === ' ') return 'Press the space bar with your thumb.'
-    const t = targetForChar(k)
-    const label = k.length === 1 && /[a-z]/.test(k) ? k.toUpperCase() : k
-    return t ? `Type ${label} with your ${FINGER_NAMES[t.key.finger].toLowerCase()} finger.` : `Type ${label}.`
-  })
-}
-
 export function LessonPage() {
   const { lessonId = '' } = useParams()
   const lesson = lessonById(lessonId)
@@ -96,17 +85,7 @@ function Lesson({ lesson }: { lesson: LessonDef }) {
   return (
     <main className="mx-auto flex max-w-[960px] flex-col gap-6 px-6 pb-16 pt-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3.5">
-          <Link to="/journey" aria-label="Back to Journey" className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-surface hover:bg-surface-2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-          </Link>
-          <div>
-            <div className="text-xs font-bold uppercase tracking-[0.08em] text-muted">
-              Lesson {lesson.order} · {STAGE_NAMES[lesson.stage]}
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">{lesson.title}</h1>
-          </div>
-        </div>
+        <h1 className="text-xl font-bold tracking-tight">Lesson {lesson.order}</h1>
         {lesson.type !== 'intro' && (
           <div className="flex gap-2">
             <button type="button" aria-pressed={showKeyboard} className={pill(showKeyboard)} onClick={() => set({ showKeyboard: !showKeyboard })}>Keyboard</button>
@@ -126,16 +105,6 @@ function Lesson({ lesson }: { lesson: LessonDef }) {
         <ResultCard lesson={lesson} result={result} next={next} onRetry={retry} />
       ) : (
         <>
-          <div className="flex flex-col gap-1 text-center text-[15px] text-muted">
-            {keyInstructions(lesson).map((line) => (
-              <p key={line} className="font-semibold text-text">{line}</p>
-            ))}
-            <p>
-              Pass: {lesson.pass.accuracy}% accuracy and {lesson.pass.wpm} WPM
-              {lesson.timeLimitMs ? ` · ${formatTime(lesson.timeLimitMs)} timed` : ''}
-              {lesson.mode === 'stop-on-error' ? ' · fix each mistake to move on' : ''}
-            </p>
-          </div>
           <TypingArea
             key={attempt.seed}
             target={attempt.text}

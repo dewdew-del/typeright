@@ -8,9 +8,6 @@ import { useAuth } from '../storage/authStore'
 function BackHeader({ title, to = '/friends' }: { title: string; to?: string }) {
   return (
     <div className="flex items-center gap-3.5">
-      <Link to={to} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-surface hover:bg-surface-2">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-      </Link>
       <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
     </div>
   )
@@ -114,27 +111,23 @@ export function CreateRoom() {
       <BackHeader title="Create a room" />
       <NeedsPlayer>
         <section className="flex flex-col gap-3">
-          <div className="text-[15px] font-bold">Who can join?</div>
           <div className="grid grid-cols-2 gap-3">
             {card('private', 'Private', 'Only people with your code can join.', <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>)}
             {card('public', 'Public', 'Anyone can find it in the list and join.', <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" /></svg>)}
           </div>
         </section>
         <section className="flex flex-col gap-3">
-          <div className="text-[15px] font-bold">What do you want to type?</div>
-          <div className="flex flex-wrap gap-2.5" role="group" aria-label="What to type">
+          <label htmlFor="text-type" className="text-[15px] font-bold">What do you want to type?</label>
+          <select
+            id="text-type"
+            value={type}
+            onChange={(e) => setType(e.target.value as RaceTextType)}
+            className="rounded-2xl border border-border bg-surface px-4 py-3.5 text-[16px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
             {RACE_TEXT_TYPES.map((t) => (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={type === t}
-                onClick={() => setType(t)}
-                className={['rounded-full border px-5 py-2.5 text-[15px] font-semibold', type === t ? 'border-accent bg-accent text-accent-contrast' : 'border-border bg-surface hover:bg-surface-2'].join(' ')}
-              >
-                {t}
-              </button>
+              <option key={t} value={t}>{t}</option>
             ))}
-          </div>
+          </select>
         </section>
         <section className="flex flex-col gap-3.5 pt-1">
           <button type="button" onClick={create} disabled={busy} className="rounded-2xl bg-accent py-4 text-lg font-bold text-accent-contrast hover:opacity-90 disabled:opacity-60">
@@ -201,9 +194,6 @@ export function JoinRoom() {
         </form>
 
         <section className="flex flex-col gap-3">
-          <div className="text-[15px] font-bold">Or pick a public room</div>
-          {rooms === null && <p className="text-sm text-muted">Loading…</p>}
-          {rooms?.length === 0 && <p className="text-sm text-muted">No public rooms right now. Create one and invite friends!</p>}
           {rooms?.map((r) => (
             <div key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-surface px-[18px] py-3.5">
               <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-accent-soft font-extrabold text-accent">{r.host.charAt(0).toUpperCase()}</span>

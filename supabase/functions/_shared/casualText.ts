@@ -60,5 +60,7 @@ export function casualText(seed: number, lang: 'en' | 'fil', minChars: number): 
   return out.join(' ')
 }
 
-/** 2 min: enough for ~200 WPM. Endless: enough for 30 minutes at ~60 WPM. */
-export const CASUAL_CHARS = { '2min': 2200, endless: 9000 }
+/** Casual lengths: seconds (0 = Endless) and how much text each needs (enough for ~200 WPM; Endless for 30 minutes at ~60 WPM). */
+export const CASUAL_SECONDS = { '10s': 10, '30s': 30, '1min': 60, '2min': 120, endless: 0 } as const
+export type CasualLength = keyof typeof CASUAL_SECONDS
+export const CASUAL_CHARS: Record<CasualLength, number> = { '10s': 400, '30s': 700, '1min': 1200, '2min': 2200, endless: 9000 }

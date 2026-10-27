@@ -101,7 +101,7 @@ export function Modes() {
       <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
         <ModeCard to="/journey" title="Journey" art={<JourneyArt />} />
         <ModeCard to="/friends" title="Play with friends" art={<FriendsArt />} />
-        <ModeCard to="/casual" title="Casual typing" art={<CasualArt />} />
+        <ModeCard to="/casual/play" title="Casual typing" art={<CasualArt />} />
       </div>
     </main>
   )

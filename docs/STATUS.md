@@ -62,6 +62,13 @@ Visitors get the new version on their next visit (the service worker updates in 
 - Casual typing uses stories from the database: 101 English and 101 Filipino (`stories` table, seed text in `supabase/seed/`). Each player gets stories they have not finished; progress is in `story_progress`; when all stories in a language are done, the list starts again. Falls back to the old sentences if the table is empty. Offline practice still uses the bundled sentences.
 - Not signed-in practice does not use stories.
 
+## Casual typing and leaderboard (27 Oct 2026, later)
+- Casual lengths: 10 s, 30 s, 1 min, 2 min, Endless. The menu opens casual typing straight in English, 30 s; Change settings (on the results screen) opens /casual to pick language and length.
+- Enter restarts a run and is the Try again shortcut. Results screen is smaller, buttons at the top, only problem keys (never Space).
+- Leaderboard: one list per length, all players, no language/period/country filters. DB function get_casual_board and test_issues check updated (migration 20261027000002).
+- Lesson page shows only "Lesson N"; header has a back arrow and the logo goes to the home screen; home page picks a random wallpaper per visit; Test skill pulses for new players; rooms use a dropdown and a Change name pop-up; accuracy shows one decimal.
+- issue-test allows 60 test starts per 10 minutes (was 20) because of quick restarts.
+
 ## Postponed on purpose (UI and UX, do later)
 - Home page animation. Preview: https://claude.ai/artifact/TgZBPRpDsBGEM9HNaH3Cjp
 - Button click feedback (hover, press, spinner). Preview: https://claude.ai/artifact/WVM122GHrVpjuAF4BXXyK9
