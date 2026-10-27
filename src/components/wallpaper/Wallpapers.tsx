@@ -27,12 +27,11 @@ function lcg(seed: number) {
 
 /**
  * Mouse effects: calls onMove with the pointer inside the scene and onLeave when it goes out. Skipped for
- * touch. `reduced` is true for people who asked for less motion: only lights may follow the mouse then,
- * nothing may move. Work is done at most once per frame.
+ * touch and for people who asked for less motion. Work is done at most once per frame.
  */
 function usePointerFx(
   ref: RefObject<HTMLElement | null>,
-  onMove: (p: { x: number; y: number; px: number; py: number }, root: HTMLElement, reduced: boolean) => void,
+  onMove: (p: { x: number; y: number; px: number; py: number }, root: HTMLElement) => void,
   onLeave: (root: HTMLElement) => void,
 ) {
   const handlers = useRef({ onMove, onLeave })
@@ -40,8 +39,7 @@ function usePointerFx(
 
   useEffect(() => {
     const root = ref.current
-    if (!root) return
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!root || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     let frame = 0
     let inside = false
     let last: PointerEvent | null = null
@@ -54,7 +52,7 @@ function usePointerFx(
       const y = last.clientY - r.top
       if (x >= 0 && y >= 0 && x <= r.width && y <= r.height) {
         inside = true
-        handlers.current.onMove({ x, y, px: x / r.width, py: y / r.height }, root, reduced)
+        handlers.current.onMove({ x, y, px: x / r.width, py: y / r.height }, root)
       } else if (inside) {
         inside = false
         handlers.current.onLeave(root)
@@ -90,7 +88,7 @@ function KeysScene({ night }: { night: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   usePointerFx(
     ref,
-    (p, root, reduced) => {
+    (p, root) => {
       const r0 = root.getBoundingClientRect()
       root.querySelectorAll<HTMLElement>('.wp-key').forEach((el) => {
         const r = el.getBoundingClientRect()
@@ -98,7 +96,7 @@ function KeysScene({ night }: { night: boolean }) {
         const cy = r.top + r.height / 2 - (r0.top + p.y)
         const d = Math.hypot(cx, cy) || 1
         if (d < 110) {
-          const f = reduced ? 0 : ((110 - d) / 110) * 26
+          const f = ((110 - d) / 110) * 26
           el.style.setProperty('--px', `${(cx / d) * f}px`)
           el.style.setProperty('--py', `${(cy / d) * f}px`)
           el.classList.add('near')
@@ -165,12 +163,11 @@ function AuroraScene({ night }: { night: boolean }) {
 
   usePointerFx(
     ref,
-    (p, root, reduced) => {
-      root.style.setProperty('--mx', `${p.px * 100}%`)
-      root.style.setProperty('--my', `${p.py * 100}%`)
-      if (reduced) return // only the light follows the mouse; the colours stay still
+    (p, root) => {
       target.current = { x: (p.px - 0.5) * 220, y: (p.py - 0.5) * 120 }
       root.querySelector<HTMLElement>('.wp-water')?.style.setProperty('--hue', `${(p.px - 0.5) * 140}deg`)
+      root.style.setProperty('--mx', `${p.px * 100}%`)
+      root.style.setProperty('--my', `${p.py * 100}%`)
       kick()
     },
     (root) => {
@@ -200,8 +197,7 @@ function HillsScene({ night }: { night: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   usePointerFx(
     ref,
-    (p, root, reduced) =>
-      !reduced &&
+    (p, root) =>
       root.querySelectorAll<SVGElement>('.wp-hill').forEach((h) => {
         h.style.transform = `translateX(${-(p.px - 0.5) * Number(h.dataset.s)}px)`
       }),
@@ -350,11 +346,10 @@ function ForestScene({ night }: { night: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   usePointerFx(
     ref,
-    (p, root, reduced) => {
+    (p, root) => {
+      root.classList.add('on')
       root.style.setProperty('--mx', `${p.px * 100}%`)
       root.style.setProperty('--my', `${p.py * 100}%`)
-      if (reduced) return // sunlight only; no layers or fireflies moving
-      root.classList.add('on')
       root.querySelectorAll<SVGElement>('.wp-trees').forEach((el) => {
         el.style.transform = `translateX(${-(p.px - 0.5) * Number(el.dataset.s)}px)`
       })
