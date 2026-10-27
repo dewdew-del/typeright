@@ -1,0 +1,70 @@
+/* Home page wallpapers. Each has a light and a dark look (data-night="1"). Motion is switched off by the
+   prefers-reduced-motion rule in index.css. */
+.wp { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.wp > * { position: absolute; }
+
+.wp-keys { background: linear-gradient(160deg, #2d6fd6, #7bb6f0); --k1: rgba(255,255,255,.2); --k2: rgba(255,255,255,.38); --kt: rgba(255,255,255,.88); }
+.wp-keys[data-night="1"] { background: linear-gradient(160deg, #0a1a3a, #1d4690); --k1: rgba(120,190,255,.14); --k2: rgba(140,200,255,.35); --kt: rgba(190,225,255,.9); }
+.wp-aurora { background: #e6f3ff; --ba: #58d6b4; --bb: #6f9bff; --bc: #c19bff; }
+.wp-aurora[data-night="1"] { background: #06132b; --ba: #19c39a; --bb: #3f7bff; --bc: #9b5cff; }
+.wp-hills { background: linear-gradient(180deg, #ffb48a, #ffe3b8 70%); --h1: #f4a77f; --h2: #e0825f; --h3: #b95a4a; }
+.wp-hills[data-night="1"] { background: linear-gradient(180deg, #14173f, #4b3c86 75%, #8a5a9a); --h1: #5a4a96; --h2: #40367a; --h3: #2a2358; }
+.wp-city { background: linear-gradient(180deg, #7fc2f2, #cfe8f7 60%, #f7e3c0); --bd: #56668a; --wn: #d8ecff; --wlit: #ffffff; --glow: rgba(255,255,255,.5); }
+.wp-city[data-night="1"] { background: linear-gradient(180deg, #1b1f4b, #7a3f7d 70%, #f08a6b); --bd: #161233; --wn: #ffd27a; --wlit: #fff6d6; --glow: rgba(255,200,120,.55); }
+.wp-dots { background: #e9f1fb; --dot: rgba(20,70,140,.3); --gl: rgba(31,106,224,.4); }
+.wp-dots[data-night="1"] { background: #0f2547; --dot: rgba(255,255,255,.28); --gl: rgba(106,163,255,.5); }
+.wp-forest { background: linear-gradient(180deg, #4ea6ee 0%, #9bd4f6 45%, #d8f0d0 72%, #5fb26a 100%); --t1: #6fc17a; --t2: #3f9b5a; --t3: #1f6b3d; --cl: rgba(255,255,255,.92); }
+.wp-forest[data-night="1"] { background: linear-gradient(180deg, #06112a 0%, #12305a 50%, #14463f 78%, #0e3a2a 100%); --t1: #1f6a4c; --t2: #14503a; --t3: #0a3a28; --cl: rgba(190,210,240,.28); }
+
+/* floating keys */
+.wp-key { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; background: var(--k1); border: 1px solid var(--k2); font: 700 18px/1 ui-monospace, Consolas, monospace; color: var(--kt); box-shadow: 0 3px 0 var(--k1); animation: wp-bob var(--d, 9s) ease-in-out var(--l, 0s) infinite; translate: var(--px, 0px) var(--py, 0px); transition: translate .35s ease-out, background .3s, color .3s; }
+.wp-key.near { background: rgba(255,255,255,.6); color: #0b3a75; }
+@keyframes wp-bob { 0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); } 50% { transform: translateY(-16px) rotate(calc(var(--r, 0deg) + 5deg)); } }
+
+/* aurora */
+.wp-water { inset: 0; filter: hue-rotate(var(--hue, 0deg)); transition: filter .6s ease-out; }
+.wp-bw { will-change: transform; }
+.wp-blob { display: block; width: clamp(240px, 34vw, 520px); height: clamp(150px, 22vw, 320px); border-radius: 50%; filter: blur(46px); opacity: .75; animation: wp-drift var(--d, 16s) ease-in-out infinite alternate; }
+.wp-shine { inset: 0; background: radial-gradient(260px circle at var(--mx, 60%) var(--my, 50%), rgba(255,255,255,.32), transparent 70%); }
+.wp-aurora[data-night="1"] .wp-shine { mix-blend-mode: screen; background: radial-gradient(260px circle at var(--mx, 60%) var(--my, 50%), rgba(255,255,255,.22), transparent 70%); }
+@keyframes wp-drift { to { transform: translate(var(--x, 60px), var(--y, 20px)) scale(1.15); } }
+
+/* sun, moon, stars, clouds (hills and forest) */
+.wp-orb { right: 9%; top: 16%; width: 62px; height: 62px; border-radius: 50%; background: radial-gradient(circle at 40% 38%, #fffbe0, #ffe27a 60%, #ffc83d); box-shadow: 0 0 40px 18px rgba(255,225,120,.6); }
+.wp[data-night="1"] .wp-orb { background: radial-gradient(circle at 38% 36%, #fff, #e4eefc 55%, #c3d9f7); box-shadow: 0 0 36px 10px rgba(170,205,255,.5); }
+.wp-star { width: 3px; height: 3px; border-radius: 50%; background: #fff; opacity: 0; }
+.wp[data-night="1"] .wp-star { opacity: .9; animation: wp-tw 3s ease-in-out infinite; }
+@keyframes wp-tw { 50% { opacity: .25; } }
+.wp-cloud { left: 0; height: 26px; width: 100px; border-radius: 26px; background: var(--cl); animation: wp-cloud linear infinite; }
+.wp-cloud::before, .wp-cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
+.wp-cloud::before { width: 42px; height: 42px; left: 16px; top: -20px; }
+.wp-cloud::after { width: 32px; height: 32px; left: 54px; top: -13px; }
+@keyframes wp-cloud { from { transform: translateX(-140px); } to { transform: translateX(110vw); } }
+
+/* hills */
+.wp-hill { left: -5%; right: -5%; bottom: 0; width: 110%; transition: transform .25s ease-out; }
+.wp-hill path { fill: var(--hc); }
+
+/* city */
+.wp-skyline { left: 0; bottom: 0; width: 100%; height: clamp(220px, 46%, 420px); }
+.wp-bd { fill: var(--bd); }
+.wp-win { fill: var(--wn); animation: wp-blinkw 6s steps(1) infinite; }
+.wp-win.lit { animation: none; fill: var(--wlit); opacity: 1; }
+@keyframes wp-blinkw { 0%, 86% { opacity: 1; } 90%, 100% { opacity: .2; } }
+.wp-glow-city, .wp-glow-dots { margin: -150px 0 0 -150px; border-radius: 50%; transition: left .25s ease-out, top .25s ease-out; }
+.wp-glow-city { width: 300px; height: 300px; left: 70%; top: 60%; background: radial-gradient(circle, var(--glow), transparent 65%); }
+
+/* dots */
+.wp-dotgrid { inset: 0; background-image: radial-gradient(var(--dot) 1.4px, transparent 1.6px); background-size: 26px 26px; }
+.wp-glow-dots { width: 320px; height: 320px; margin: -160px 0 0 -160px; left: 70%; top: 50%; background: radial-gradient(circle, var(--gl), transparent 65%); }
+
+/* forest */
+.wp-trees { left: -2%; right: -2%; bottom: 0; width: 104%; transition: transform .3s ease-out; height: calc(var(--k) * clamp(190px, 36vh, 380px)); }
+.wp-tree { transform-box: fill-box; transform-origin: 50% 100%; animation: wp-sway var(--d, 6s) ease-in-out var(--l, 0s) infinite alternate; }
+.wp-t1 .wp-tree { fill: var(--t1); } .wp-t2 .wp-tree { fill: var(--t2); } .wp-t3 .wp-tree { fill: var(--t3); }
+@keyframes wp-sway { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
+.wp-sunlight { inset: 0; mix-blend-mode: soft-light; background: radial-gradient(280px circle at var(--mx, 75%) var(--my, 25%), rgba(255,250,200,.95), transparent 70%); }
+.wp-fly { width: 7px; height: 7px; border-radius: 50%; background: #fff8b0; box-shadow: 0 0 10px 4px rgba(255,248,160,.8); opacity: 0; transition: opacity .4s; }
+.wp-forest.on .wp-fly { opacity: 1; }
+.wp-forest[data-night="1"] .wp-fly { opacity: .55; animation: wp-tw 3s ease-in-out infinite; }
+.wp-forest[data-night="1"].on .wp-fly { opacity: 1; animation: none; }
