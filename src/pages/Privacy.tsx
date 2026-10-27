@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-const UPDATED = '26 October 2026'
+const UPDATED = '27 October 2026'
 
 /** Plain-language privacy policy (Google sign-in requires one before the app can go public). */
 export function Privacy() {
@@ -26,8 +26,10 @@ export function Privacy() {
         <ul className="ml-5 list-disc space-y-1">
           <li>Your email address, to log you in.</li>
           <li>If you use Google: your name and email address from Google. TypeRight does not get access to anything else in your Google account.</li>
-          <li>Your username, country and profile photo, if you set them. These are shown on leaderboards and your public profile.</li>
-          <li>Your lesson progress, typing results (speed and accuracy) and which keys you miss most.</li>
+          <li>Your username, country and profile photo, if you set them. These are shown on the leaderboards, in races and on your public profile. The leaderboards also show your speed and accuracy, and the time of Endless runs.</li>
+          <li>Your lesson progress, typing results (speed, accuracy and how long the run lasted) and which keys you miss most.</li>
+          <li>Which casual typing stories you have finished, so you get new ones until you have read them all.</li>
+          <li>Friend races: the rooms you join and your race results. Other players in the room can see your username.</li>
           <li>For leaderboard and race runs: the timing of each key press, used only to check the result is genuine. These logs are deleted after 30 days.</li>
         </ul>
       </Section>
@@ -35,6 +37,11 @@ export function Privacy() {
       <Section title="People online">
         The home page shows how many people have TypeRight open right now. This is a live counter only: each open tab
         uses a random, temporary id that is forgotten when the tab closes. No names, accounts or locations are used.
+      </Section>
+
+      <Section title="On your device">
+        Your settings (theme, text size, sound) and the last home page wallpaper you saw are kept in your own browser.
+        They are not sent anywhere.
       </Section>
 
       <Section title="Where it is kept">
