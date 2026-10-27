@@ -4,8 +4,9 @@ import { Avatar } from '../components/layout/Avatar'
 import { NeedsPlayer } from '../components/race/NeedsPlayer'
 import { TypingArea, type TypingResult } from '../components/typing/TypingArea'
 import { joinRoom, leaveRoom, loadRoom, resetRoom, startRace, submitRace, touchStreak, type RaceRow, type Room, type RoomPlayer } from '../lib/api'
-import { raceText, type RaceTextType } from '../lib/raceText'
+import { parseRoomLabel, raceText } from '../lib/raceText'
 import { formatTime } from '../engine/stats'
+import { MIN_RACE_ACCURACY, raceScore } from '../../supabase/functions/_shared/scoring'
 import { useAuth } from '../storage/authStore'
 import { useRaceChannel } from '../storage/useRaceChannel'
 
@@ -149,7 +150,8 @@ function Room({ roomId }: { roomId: string }) {
       error={error}
       onAgain={async () => {
         setError(null)
-        const err = await resetRoom(room.id, raceText(room.text_type as RaceTextType))
+        const { type, difficulty } = parseRoomLabel(room.text_type)
+        const err = await resetRoom(room.id, await raceText(type, difficulty))
         if (err) setError(err)
         else {
           clearProgress()
@@ -368,9 +370,10 @@ function Results(props: {
 }) {
   const { room, players, results, isHost } = props
   const byId = new Map(players.map((p) => [p.user_id, p]))
+  // Ranked by overall score (speed x accuracy), not by who finished first; finish time only breaks ties.
   const ranked = [...results].sort((a, b) => {
     if (a.finished !== b.finished) return a.finished ? -1 : 1
-    if (a.finished) return (a.finish_ms ?? 0) - (b.finish_ms ?? 0)
+    if (a.finished) return raceScore(b.wpm, b.accuracy) - raceScore(a.wpm, a.accuracy) || (a.finish_ms ?? 0) - (b.finish_ms ?? 0)
     return b.progress - a.progress
   })
   const waiting = players.filter((p) => !results.some((r) => r.user_id === p.user_id))
@@ -397,9 +400,10 @@ function Results(props: {
                 <span className="truncate font-bold">{p?.username ?? 'Left the room'}</span>
                 {p?.is_guest && <span className="rounded-full border border-border bg-bg px-2 py-0.5 text-xs font-bold text-muted">Guest</span>}
               </span>
-              <span className="w-20 text-right text-xl font-extrabold tabular-nums">{Math.round(r.wpm)} <span className="text-xs font-medium text-muted">WPM</span></span>
-              <span className="w-16 text-right font-semibold tabular-nums">{r.accuracy}%</span>
-              <span className="w-16 text-right text-muted tabular-nums">{r.finished ? formatTime(r.finish_ms ?? 0) : 'DNF'}</span>
+              <span className="w-24 text-right text-xl font-extrabold tabular-nums" title="Score: speed x accuracy">{r.finished ? raceScore(r.wpm, r.accuracy) : '-'} <span className="text-xs font-medium text-muted">pts</span></span>
+              <span className="w-16 text-right text-sm font-semibold tabular-nums">{Math.round(r.wpm)} <span className="text-xs font-medium text-muted">WPM</span></span>
+              <span className="w-14 text-right text-sm font-semibold tabular-nums">{r.accuracy}%</span>
+              <span className="w-16 text-right text-sm text-muted tabular-nums">{r.finished ? formatTime(r.finish_ms ?? 0) : r.accuracy < MIN_RACE_ACCURACY ? 'Under ' + MIN_RACE_ACCURACY + '%' : 'DNF'}</span>
             </div>
           )
         })}
@@ -412,6 +416,9 @@ function Results(props: {
             </div>
           ))}
       </section>
+      <p className="text-sm text-muted">
+        Ranked by score: speed (WPM) times accuracy. Finish with at least {MIN_RACE_ACCURACY}% accuracy to be counted; typing fast but wrong does not win.
+      </p>
       <div className="flex flex-wrap items-center gap-3 pt-1">
         {isHost ? (
           <button type="button" onClick={props.onAgain} disabled={!over} className="rounded-xl bg-accent px-8 py-3.5 text-[17px] font-bold text-accent-contrast hover:opacity-90 disabled:opacity-60">

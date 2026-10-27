@@ -93,3 +93,14 @@ describe('replay: per-key stats', () => {
     expect(state.keyStats.b.totalMs).toBe(250)
   })
 })
+
+describe('race score', () => {
+  it('rewards accuracy as much as speed, so mashing keys loses', async () => {
+    const { raceScore, MIN_RACE_ACCURACY } = await import('./scoring')
+    expect(raceScore(60, 100)).toBe(60)
+    expect(raceScore(60, 95)).toBe(57)
+    expect(raceScore(11, 4.4)).toBeCloseTo(0.5, 1) // the spammer from the screenshot
+    expect(raceScore(40, 98)).toBeGreaterThan(raceScore(55, 60))
+    expect(MIN_RACE_ACCURACY).toBe(90)
+  })
+})

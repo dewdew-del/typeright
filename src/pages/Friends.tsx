@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { NeedsPlayer, PlayingAs } from '../components/race/NeedsPlayer'
 import { createRoom, joinRoom, listPublicRooms } from '../lib/api'
-import { RACE_TEXT_TYPES, raceText, type RaceTextType } from '../lib/raceText'
+import { Choice } from '../components/ui/Choice'
+import { DIFFICULTIES, RACE_TEXT_TYPES, raceText, roomLabel, type Difficulty, type RaceTextType } from '../lib/raceText'
 import { useAuth } from '../storage/authStore'
 
 function BackHeader({ title, to = '/friends' }: { title: string; to?: string }) {
@@ -78,13 +79,14 @@ export function CreateRoom() {
   const navigate = useNavigate()
   const [visibility, setVisibility] = useState<'private' | 'public'>('private')
   const [type, setType] = useState<RaceTextType>('Sentences')
+  const [difficulty, setDifficulty] = useState<Difficulty>('Medium')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const create = async () => {
     setBusy(true)
     setError(null)
-    const { id, error: err } = await createRoom(visibility, type, raceText(type))
+    const { id, error: err } = await createRoom(visibility, roomLabel(type, difficulty), await raceText(type, difficulty))
     setBusy(false)
     if (id) navigate(`/race/${id}`)
     else setError(err)
@@ -128,6 +130,10 @@ export function CreateRoom() {
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
+        </section>
+        <section className="flex flex-col gap-3">
+          <Choice label="Difficulty" value={difficulty} onChange={setDifficulty} options={DIFFICULTIES.map((d) => ({ value: d, label: d }))} />
+          <p className="text-sm text-muted">Easy: short, simple texts. Medium: everyday texts. Hard: long, tricky texts.</p>
         </section>
         <section className="flex flex-col gap-3.5 pt-1">
           <button type="button" onClick={create} disabled={busy} className="rounded-2xl bg-accent py-4 text-lg font-bold text-accent-contrast hover:opacity-90 disabled:opacity-60">
