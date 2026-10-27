@@ -1,3 +1,4 @@
+import { playKeySound, SOUND_PACKS, type SoundPack } from '../../lib/sound'
 import { Choice } from '../ui/Choice'
 import { useSettings, useUi, type TextSize, type TypingFont } from '../../stores/settings'
 import { Overlay } from './Overlay'
@@ -11,7 +12,7 @@ export const FONT_FAMILY: Record<TypingFont, string> = {
 /** Settings as a pop-up, so you never leave what you were doing. */
 export function SettingsDialog() {
   const { panel, close } = useUi()
-  const { sound, showKeyboard, textSize, font, set } = useSettings()
+  const { sound, soundPack, showKeyboard, textSize, font, set } = useSettings()
   if (panel !== 'settings') return null
   const onOff = [
     { value: 'on', label: 'On' },
@@ -37,7 +38,26 @@ export function SettingsDialog() {
           The quick brown fox jumps over the lazy dog.
         </p>
       </div>
-      <Choice label="Key sounds" value={sound ? 'on' : 'off'} onChange={(v) => set({ sound: v === 'on' })} options={onOff} />
+      <Choice
+        label="Key sounds"
+        value={sound ? 'on' : 'off'}
+        onChange={(v) => {
+          set({ sound: v === 'on' })
+          if (v === 'on') playKeySound(true, soundPack)
+        }}
+        options={onOff}
+      />
+      {sound && (
+        <Choice<SoundPack>
+          label="Sound style (tap one to hear it)"
+          value={soundPack}
+          onChange={(v) => {
+            set({ soundPack: v })
+            playKeySound(true, v)
+          }}
+          options={SOUND_PACKS.map((p) => ({ value: p.value, label: p.label }))}
+        />
+      )}
       <Choice label="On-screen keyboard in lessons" value={showKeyboard ? 'on' : 'off'} onChange={(v) => set({ showKeyboard: v === 'on' })} options={onOff} />
     </Overlay>
   )

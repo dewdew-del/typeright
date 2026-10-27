@@ -66,7 +66,7 @@ export function TypingArea({
   onFinish,
 }: Props) {
   const { session, stats, ended, onKey, extend, finish, now } = useTypingSession(target, mode, timeLimitMs)
-  const { sound, textSize, font } = useSettings()
+  const { sound, soundPack, textSize, font } = useSettings()
   const boxRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const cursorRef = useRef<HTMLSpanElement>(null)
@@ -110,7 +110,7 @@ export function TypingArea({
     if (key === null) return
     e.preventDefault() // keep Space from scrolling and Backspace from navigating
     if (locked) return
-    if (sound && !ended) playKeySound(key === 'Backspace' || key === text[cursor])
+    if (sound && !ended) playKeySound(key === 'Backspace' || key === text[cursor], soundPack, key)
     onKey(key)
   }
 
