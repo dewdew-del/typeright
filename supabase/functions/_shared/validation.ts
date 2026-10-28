@@ -30,7 +30,18 @@ export const LIMITS = {
   endlessMaxMs: 30 * 60_000,
   /** Accept but mark for review. */
   flagWpm: 180,
+  /**
+   * Human gaps between keys are right-skewed (now and then a hesitation) and vary a lot. A script that adds
+   * evenly spread random jitter has almost no skew. Judged only with enough gaps; flag, never reject.
+   */
+  flagGapVariation: 0.25,
+  flagGapSkew: 0.4,
+  minGapsForShape: 100,
 }
+
+/** Flags that keep a run off the public leaderboards until the developer has looked at it (keep in step with the SQL boards). */
+export const HIDDEN_FLAGS = ['very-fast', 'even-timing']
+export const isHiddenFromBoards = (flags: string[]) => flags.some((f) => HIDDEN_FLAGS.includes(f))
 
 export interface ValidationInput {
   text: string
@@ -105,10 +116,22 @@ function humanCheck(log: Keystroke[], summary: Summary): string | null {
   return null
 }
 
-function flagsFor(summary: Summary): string[] {
+/** Skewness (third standardized moment): 0 for a symmetric spread, positive when the tail is on the slow side. */
+function skewness(xs: number[]): number {
+  const mean = xs.reduce((a, b) => a + b, 0) / xs.length
+  const sd = Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / xs.length)
+  if (sd === 0) return 0
+  return xs.reduce((a, b) => a + ((b - mean) / sd) ** 3, 0) / xs.length
+}
+
+function flagsFor(summary: Summary, log: Keystroke[]): string[] {
   const flags: string[] = []
   if (summary.wpm > LIMITS.flagWpm) flags.push('very-fast')
   if (summary.accuracy === 100 && summary.wpm > 120) flags.push('perfect-and-fast')
+  const g = gaps(log)
+  if (g.length >= LIMITS.minGapsForShape && (variation(g) < LIMITS.flagGapVariation || skewness(g) < LIMITS.flagGapSkew)) {
+    flags.push('even-timing')
+  }
   return flags
 }
 
@@ -133,7 +156,7 @@ export function validateRanked(input: ValidationInput): Verdict {
   if (summary.keystrokes < LIMITS.minKeystrokes) return reject('too-short')
   const bad = humanCheck(log, summary)
   if (bad) return reject(bad)
-  return { ok: true, flags: flagsFor(summary), summary }
+  return { ok: true, flags: flagsFor(summary, log), summary }
 }
 
 export interface RaceInput {
@@ -174,7 +197,7 @@ export function validateRace(input: RaceInput): RaceVerdict {
   }
   const bad = humanCheck(log, summary)
   if (bad) return reject(bad)
-  return { ok: true, flags: flagsFor(summary), summary, complete: summary.complete, progress: summary.correctChars }
+  return { ok: true, flags: flagsFor(summary, log), summary, complete: summary.complete, progress: summary.correctChars }
 }
 
 /** What the player sees for each rejection reason. */
