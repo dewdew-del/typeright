@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom'
 import { Logo } from '../components/layout/Logo'
 import { ThemeButton } from '../components/layout/ThemeButton'
 import { WALLPAPERS, pickWallpaper } from '../components/wallpaper/Wallpapers'
-import { useActiveCount } from '../lib/presence'
+import { useActiveCount, usePresence } from '../lib/presence'
 import { useResolvedTheme } from '../lib/theme'
 
 export function Landing() {
   // A different wallpaper on each visit; it follows the light or dark theme.
   const [index] = useState(pickWallpaper)
+  // The "people online" count is only shown here, so the live connection is only open here.
+  usePresence()
   const night = useResolvedTheme() === 'dark'
   const active = useActiveCount((s) => s.count)
   const { Scene, ink } = WALLPAPERS[index]

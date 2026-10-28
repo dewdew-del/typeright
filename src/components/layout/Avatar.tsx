@@ -5,7 +5,7 @@ export function Avatar({ name, url, size = 34 }: { name: string; url?: string | 
   const [broken, setBroken] = useState(false)
   const style = { width: size, height: size }
   if (url && !broken) {
-    return <img src={url} alt="" style={style} className="shrink-0 rounded-full border border-border object-cover" onError={() => setBroken(true)} referrerPolicy="no-referrer" />
+    return <img src={url} alt="" loading="lazy" decoding="async" style={style} className="shrink-0 rounded-full border border-border object-cover" onError={() => setBroken(true)} referrerPolicy="no-referrer" />
   }
   return (
     <span aria-hidden style={{ ...style, fontSize: size * 0.42 }} className="grid shrink-0 place-items-center rounded-full bg-accent-soft font-extrabold text-accent">

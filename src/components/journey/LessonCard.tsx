@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { memo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { LessonDef } from '../../content/lessons/types'
 import type { LessonStatus } from '../../engine/progress'
@@ -39,7 +39,7 @@ interface Props {
 }
 
 /** One lesson in the Journey grid: a small illustrated panel, number, status and title. */
-export function LessonCard({ lesson, status, stars, target }: Props) {
+export const LessonCard = memo(function LessonCard({ lesson, status, stars, target }: Props) {
   const isKeys = lesson.type === 'new-keys' && lesson.keys !== ''
   const current = status === 'current'
   const locked = status === 'locked'
@@ -109,7 +109,7 @@ export function LessonCard({ lesson, status, stars, target }: Props) {
       </div>
     </Wrapper>
   )
-}
+})
 
 /** Locked lessons are plain, unclickable cards; the rest link to the lesson. */
 function Wrapper({ locked, to, children, ...rest }: { locked: boolean; to: string; children: ReactNode; id: string; className: string; 'aria-label': string }) {

@@ -5,7 +5,7 @@ import { supabase } from './supabase'
 /** How many people have TypeRight open right now. Nobody is identified: each tab uses a random, throwaway id. */
 export const useActiveCount = create<{ count: number | null }>()(() => ({ count: null }))
 
-/** Joins the shared "visitors" Realtime channel while the app is open. Mount once at the root. */
+/** Joins the shared "visitors" Realtime channel while the home page (which shows the count) is open. */
 export function usePresence() {
   useEffect(() => {
     if (!supabase) return
@@ -17,6 +17,7 @@ export function usePresence() {
         if (status === 'SUBSCRIBED') void channel.track({ at: Date.now() })
       })
     return () => {
+      useActiveCount.setState({ count: null }) // a stale number must not show on the next visit
       void supabase?.removeChannel(channel)
     }
   }, [])

@@ -6,7 +6,7 @@ import { formatAccuracy, formatTime } from '../../engine/stats'
 import { useTypingSession } from '../../engine/useTypingSession'
 import { playKeySound } from '../../lib/sound'
 import { useSettings, type TextSize } from '../../stores/settings'
-import { FONT_FAMILY } from '../layout/SettingsDialog'
+import { FONT_FAMILY } from '../../lib/fonts'
 import { Keyboard } from '../keyboard/Keyboard'
 
 export interface TypingResult {
@@ -40,6 +40,22 @@ interface Props {
 }
 
 const VISIBLE_LINES = 3
+/** Windowing for long texts, in words: start trimming once the cursor is this far in, keep this many above it, and show everything again if the cursor comes back this close to the top. */
+const WINDOW_DROP_AFTER = 120
+const WINDOW_KEEP = 60
+const WINDOW_MIN = 20
+
+/** Index of the word that holds position `pos` (words are in order of start). */
+function wordAt(words: { start: number }[], pos: number): number {
+  let lo = 0
+  let hi = words.length - 1
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1
+    if (words[mid].start <= pos) lo = mid
+    else hi = mid - 1
+  }
+  return Math.max(0, lo)
+}
 /** Phones and tablets without a mouse: typing needs a real keyboard (Bluetooth works). */
 const TOUCH_ONLY = typeof window !== 'undefined' && window.matchMedia?.('(hover: none) and (pointer: coarse)').matches
 const SIZE_CLASS: Record<TextSize, string> = {
@@ -52,7 +68,7 @@ const SIZE_CLASS: Record<TextSize, string> = {
  * The text to type with live WPM, accuracy and time. Captures keys only while focused.
  * Long texts show three lines at a time and scroll as you type.
  */
-export function TypingArea({
+export const TypingArea = memo(function TypingArea({
   target,
   mode = 'free',
   timeLimitMs,
@@ -114,29 +130,74 @@ export function TypingArea({
     onKey(key)
   }
 
-  // Keep the line with the cursor in view: the line above it stays visible for context.
-  useLayoutEffect(() => {
-    const content = contentRef.current
-    const cur = cursorRef.current
-    if (!content) return
-    if (!cur) {
-      if (cursor === 0) content.style.transform = ''
-      return
-    }
-    const line = parseFloat(getComputedStyle(content).lineHeight) || 40
-    const offset = Math.max(0, cur.offsetTop - line)
-    content.style.transform = `translateY(-${offset}px)`
-  }, [cursor, text, textSize])
-
-  const elapsed = elapsedMs(session, now)
-  const clock = timeLimitMs === undefined ? formatTime(elapsed) : formatTime(timeLimitMs - elapsed)
-
   // Group characters into words so lines only break between words.
   const words = useMemo(() => {
     const out: { start: number; text: string }[] = []
     for (const m of text.matchAll(/\S+\s*|\s+/g)) out.push({ start: m.index ?? 0, text: m[0] })
     return out
   }, [text])
+  const cursorWord = wordAt(words, cursor)
+
+  // Long texts (Endless): words far above the cursor are replaced by an empty block of the same height,
+  // so the page never holds thousands of letters while only three lines show. It looks exactly the same.
+  const [win, setWin] = useState({ start: 0, h: 0 })
+  const start = win.start < words.length ? win.start : 0
+  const spacerH = start === win.start ? win.h : 0
+  useEffect(() => {
+    setWin((w) => (w.start === 0 && w.h === 0 ? w : { start: 0, h: 0 }))
+  }, [target])
+  useLayoutEffect(() => {
+    const content = contentRef.current
+    if (!content) return
+    if (start > 0 && cursorWord - start < WINDOW_MIN) {
+      setWin({ start: 0, h: 0 }) // backspaced up to the edge of the window: show everything again
+      return
+    }
+    if (cursorWord - start < WINDOW_DROP_AFTER) return
+    const child = (wordIndex: number) => content.children[(spacerH > 0 ? 1 : 0) + (wordIndex - start)] as HTMLElement | undefined
+    const firstLineTop = (child(start)?.offsetTop ?? 0) - spacerH
+    // Cut only at the first word of a line, so the lines that stay do not wrap any differently.
+    // The cut must leave at least WINDOW_MIN words above the cursor, or the check above would undo it at once.
+    const limit = cursorWord - WINDOW_MIN
+    let i = cursorWord - WINDOW_KEEP
+    let prevTop = child(i - 1)?.offsetTop ?? -1
+    for (; i <= limit; i++) {
+      const top = child(i)?.offsetTop
+      if (top === undefined) return
+      if (top > prevTop) break
+      prevTop = top
+    }
+    const first = child(i)
+    if (i > limit || !first) return
+    setWin({ start: i, h: first.offsetTop - firstLineTop })
+  }, [cursorWord, start, spacerH])
+
+  // Keep the line with the cursor in view: the line above it stays visible for context.
+  // Words never break across lines, so the line only changes when the cursor enters another word:
+  // measuring just then avoids forcing a page layout on every key.
+  const measured = useRef<{ word: Element | null; look: string }>({ word: null, look: '' })
+  useLayoutEffect(() => {
+    const content = contentRef.current
+    const cur = cursorRef.current
+    if (!content) return
+    if (!cur) {
+      if (cursor === 0) {
+        content.style.transform = ''
+        measured.current = { word: null, look: '' }
+      }
+      return
+    }
+    const word = cur.parentElement
+    const look = `${textSize}|${font}`
+    if (measured.current.word === word && measured.current.look === look) return
+    measured.current = { word, look }
+    const line = parseFloat(getComputedStyle(content).lineHeight) || 40
+    const offset = Math.max(0, cur.offsetTop - line)
+    content.style.transform = `translateY(-${offset}px)`
+  }, [cursor, text, textSize, font])
+
+  const elapsed = elapsedMs(session, now)
+  const clock = timeLimitMs === undefined ? formatTime(elapsed) : formatTime(timeLimitMs - elapsed)
 
   return (
     <div className="flex flex-col gap-7">
@@ -174,11 +235,12 @@ export function TypingArea({
             ref={contentRef}
             className={['relative transition-transform duration-150', focused ? '' : 'blur-[3px]'].join(' ')}
           >
-            {words.map(({ start, text: word }) => {
-              const end = start + word.length
+            {spacerH > 0 && <div aria-hidden style={{ height: spacerH }} />}
+            {words.slice(start).map(({ start: from, text: word }) => {
+              const end = from + word.length
               // Only words whose letters changed are redrawn; the rest are skipped on each key and clock tick.
-              const cursorAt = !ended && cursor >= start && cursor < end ? cursor - start : -1
-              return <Word key={start} word={word} typedPart={typed.slice(start, end).join('')} cursorAt={cursorAt} cursorRef={cursorRef} />
+              const cursorAt = !ended && cursor >= from && cursor < end ? cursor - from : -1
+              return <Word key={from} word={word} typedPart={typed.slice(from, end).join('')} cursorAt={cursorAt} cursorRef={cursorRef} />
             })}
           </div>
         </div>
@@ -196,7 +258,7 @@ export function TypingArea({
       )}
     </div>
   )
-}
+})
 
 const Word = memo(function Word({
   word,
