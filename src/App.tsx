@@ -20,9 +20,17 @@ function OpenLeaderboard() {
   return <Navigate to="/play" replace />
 }
 
+/** Old /privacy links (Google sign-in screen) open the privacy pop-up over the home page. */
+function OpenPrivacy() {
+  const open = useUi((s) => s.open)
+  useEffect(() => open('privacy'), [open])
+  return <Navigate to="/" replace />
+}
+
 // Each page is its own file, downloaded when it is first visited, so the first screen loads less code.
 const router = createBrowserRouter([
   { path: '/', lazy: async () => ({ Component: (await import('./pages/Landing')).Landing }) },
+  { path: '/privacy', element: <OpenPrivacy /> },
   {
     element: <AppShell />,
     children: [
@@ -40,7 +48,6 @@ const router = createBrowserRouter([
       { path: 'login', lazy: async () => ({ Component: (await import('./pages/Login')).Login }) },
       { path: 'profile', element: <OpenProfile /> },
       { path: 'leaderboard', element: <OpenLeaderboard /> },
-      { path: 'privacy', lazy: async () => ({ Component: (await import('./pages/Privacy')).Privacy }) },
       { path: 'admin', lazy: async () => ({ Component: (await import('./pages/Admin')).Admin }) },
       { path: 'u/:username', lazy: async () => ({ Component: (await import('./pages/PublicProfile')).PublicProfile }) },
       { path: '*', element: <ComingSoon title="Page not found" stage={1} /> },

@@ -72,7 +72,7 @@ export function SettingsDialog() {
   const { sound, soundPack: savedPack, showKeyboard, textSize, font, set } = useSettings()
   if (panel !== 'settings') return null
   // A style that was removed (for example one chosen earlier) falls back to the default.
-  const soundPack: SoundPack = SOUND_PACKS.some((p) => p.value === savedPack) ? savedPack : 'default'
+  const soundPack: SoundPack = SOUND_PACKS.some((p) => p.value === savedPack) ? savedPack : 'softmech'
 
   return (
     <Overlay title="Settings" onClose={close}>
