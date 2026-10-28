@@ -1,6 +1,7 @@
 /** Key sound styles. All are generated in the browser, so there are no audio files to download. */
 export const SOUND_PACKS = [
-  { value: 'default', label: 'Default' },
+  { value: 'softmech', label: 'Soft mechanical' },
+  { value: 'default', label: 'Classic click' },
   { value: 'mechanical', label: 'Mechanical (extra clicky)' },
   { value: 'tactile', label: 'Tactile bump' },
   { value: 'thock', label: 'Deep thock' },
@@ -110,7 +111,7 @@ export function playCue(kind: CueKind) {
  * quieter sound a moment later when the key comes back up. A wrong key gets a low thud. The space bar is
  * deeper and heavier, like a real keyboard.
  */
-export function playKeySound(correct: boolean, pack: SoundPack = 'default', key?: string) {
+export function playKeySound(correct: boolean, pack: SoundPack = 'softmech', key?: string) {
   try {
     const { c, out } = audio()
     const x: Voice = { c, out, t: c.currentTime, v: 0.95 + Math.random() * 0.1 }
@@ -127,6 +128,13 @@ export function playKeySound(correct: boolean, pack: SoundPack = 'default', key?
     }
 
     switch (pack) {
+      case 'softmech': // quiet mechanical board: a muted click, a round low body, a faint key-up
+        burst(x, 0, 'bandpass', 2300 * d, 1, 0.32, 0.022)
+        burst(x, 0.004, 'lowpass', 900, 0.7, 0.28, 0.05)
+        tone(x, 0.004, 'sine', 175 * d, 98 * d, 0.42, 0.085)
+        burst(x, 0.085, 'bandpass', 2000 * d, 1, 0.1, 0.016)
+        tone(x, 0.085, 'sine', 140 * d, 100 * d, 0.07, 0.035)
+        break
       case 'mechanical': // blue switch: a loud double click, then a clack, the case body and a spring ping
         burst(x, 0, 'highpass', 4300 * d, 0.7, 0.8, 0.014)
         burst(x, 0.011, 'bandpass', 3200 * d, 1.6, 0.7, 0.02)

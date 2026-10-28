@@ -399,10 +399,6 @@ function Results(props: {
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold tracking-tight">{over ? 'Results' : 'Waiting for others…'}</h1>
-        <span className="flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-muted">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z" /><path d="M8.5 12l2.5 2.5L15.5 10" /></svg>
-          Verified by the server
-        </span>
       </div>
       <section aria-label="Final standings" className="flex flex-col gap-2.5">
         {ranked.map((r, i) => {
