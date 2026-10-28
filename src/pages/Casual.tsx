@@ -211,13 +211,16 @@ export function CasualPlay() {
         <Link to={`/casual?lang=${lang}&length=${mode}`} className="rounded-full border border-border bg-surface px-5 py-2 text-sm font-bold hover:bg-surface-2">
           Change settings
         </Link>
-        <button
-          type="button"
-          onClick={() => setFinishSignal((n) => n + 1)}
-          className="rounded-full bg-accent px-5 py-2 text-sm font-bold text-accent-contrast hover:opacity-90"
-        >
-          Finish
-        </button>
+        {/* Timed runs end on their own; stopping early would not count, so only Endless can be finished by hand. */}
+        {mode === 'endless' && (
+          <button
+            type="button"
+            onClick={() => setFinishSignal((n) => n + 1)}
+            className="rounded-full bg-accent px-5 py-2 text-sm font-bold text-accent-contrast hover:opacity-90"
+          >
+            Finish
+          </button>
+        )}
       </div>
       <TypingArea
         key={issued?.issueId ?? round}

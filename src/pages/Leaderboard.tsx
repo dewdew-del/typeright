@@ -42,7 +42,7 @@ export function LeaderboardDialog() {
         ))}
       </div>
       <BoardTable rows={rows} error={error} showDuration={mode === 'endless'} empty="No results yet. Play casual typing while signed in to be first!" />
-      <Link to="/casual/play" onClick={close} className="self-start rounded-xl bg-accent px-5 py-2.5 font-bold text-accent-contrast hover:opacity-90">
+      <Link to={`/casual/play?length=${mode}`} onClick={close} className="self-start rounded-xl bg-accent px-5 py-2.5 font-bold text-accent-contrast hover:opacity-90">
         Play casual typing
       </Link>
     </Overlay>
