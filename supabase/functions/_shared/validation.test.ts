@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { casualText } from './casualText'
 import { rankedText } from './rankedText'
 import type { Keystroke } from './scoring'
-import { LIMITS, parseLog, validateRace, validateRanked } from './validation'
+import { isHiddenFromBoards, LIMITS, parseLog, validateRace, validateRanked } from './validation'
 
 const TEXT = rankedText(42, 30)
 
@@ -61,6 +62,61 @@ describe('validateRanked', () => {
     const v = validateRanked({ ...base, log })
     expect(v.ok).toBe(true)
     expect(v.summary!.wpm).toBeLessThan(90)
+  })
+})
+
+/** Deterministic standard-normal numbers (LCG + Box-Muller), so the tests never flake. */
+function normals(seed: number) {
+  let s = seed >>> 0
+  const uniform = () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0
+    return (s + 1) / 4294967297
+  }
+  return () => Math.sqrt(-2 * Math.log(uniform())) * Math.cos(2 * Math.PI * uniform())
+}
+
+describe('review flags (hidden from the leaderboard)', () => {
+  const LONG = casualText(9, 'en', 3000)
+  const run = { text: LONG, durationMs: 120_000, issuedAt: 0, now: 122_000 }
+
+  it('a real typist (right-skewed gaps, ~80 WPM) gets no flag', () => {
+    const z = normals(1)
+    const log = typeText(LONG, () => 150 * Math.exp(0.5 * z()), 120_000)
+    const v = validateRanked({ ...run, log })
+    expect(v.ok).toBe(true)
+    expect(v.flags).toEqual([])
+  })
+
+  it('a script with Gaussian jitter at a believable speed is accepted but flagged even-timing', () => {
+    const z = normals(2)
+    const log = typeText(LONG, () => Math.max(30, 80 + 25 * z()), 120_000)
+    const v = validateRanked({ ...run, log })
+    expect(v.ok).toBe(true)
+    expect(v.flags).toContain('even-timing')
+    expect(isHiddenFromBoards(v.flags)).toBe(true)
+  })
+
+  it('very fast but human-shaped typing is flagged very-fast', () => {
+    const z = normals(3)
+    const log = typeText(LONG, () => 55 * Math.exp(0.4 * z()), 120_000)
+    const v = validateRanked({ ...run, log })
+    expect(v.ok).toBe(true)
+    expect(v.summary!.wpm).toBeGreaterThan(LIMITS.flagWpm)
+    expect(v.flags).toContain('very-fast')
+    expect(isHiddenFromBoards(v.flags)).toBe(true)
+  })
+
+  it('perfect-and-fast alone does not hide a run (good typists often finish at 100%)', () => {
+    expect(isHiddenFromBoards(['perfect-and-fast'])).toBe(false)
+    expect(isHiddenFromBoards([])).toBe(false)
+  })
+
+  it('short runs (under 100 gaps) are not judged on rhythm shape', () => {
+    const z = normals(4)
+    const log = typeText(TEXT, () => Math.max(40, 120 + 30 * z()), 8_000)
+    const v = validateRanked({ ...base, log })
+    expect(v.ok).toBe(true)
+    expect(v.flags).not.toContain('even-timing')
   })
 })
 

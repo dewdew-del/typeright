@@ -2,7 +2,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, json } from '../_shared/http.ts'
 import { finishedStoryIds, type Story } from '../_shared/storyPick.ts'
-import { validateRanked } from '../_shared/validation.ts'
+import { HIDDEN_FLAGS, isHiddenFromBoards, validateRanked } from '../_shared/validation.ts'
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false },
@@ -91,12 +91,17 @@ Deno.serve(async (req) => {
   const s = verdict.summary
   const wpm = round1(s.wpm)
   const accuracy = round1(s.accuracy)
-  const qualifies = accuracy >= MIN_ACCURACY
+  // Runs with a review flag are saved but stay off the boards until the developer clears the flag.
+  const qualifies = accuracy >= MIN_ACCURACY && !isHiddenFromBoards(verdict.flags)
 
   // Ranked tests compare with all-time ranked results; the daily challenge only with that day.
   // deno-lint-ignore no-explicit-any
   const sameBoard = (q: any) => {
-    let out = q.eq('kind', issue.kind).eq('duration_s', issue.duration_s).eq('lang', issue.lang)
+    let out = q
+      .eq('kind', issue.kind)
+      .eq('duration_s', issue.duration_s)
+      .eq('lang', issue.lang)
+      .not('flags', 'ov', `{${HIDDEN_FLAGS.join(',')}}`)
     if (issue.daily_date) out = out.eq('daily_date', issue.daily_date)
     return out
   }
