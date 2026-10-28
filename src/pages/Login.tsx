@@ -84,6 +84,11 @@ export function Login() {
               <GoogleLogo />
               Continue with Google
             </button>
+            <p className="-mt-2 text-center text-[13px] leading-snug text-muted">
+              We only get your name and email. We never see your Google password, and we never post anything.
+              <br />
+              <span lang="fil">Pangalan at email lang ang natatanggap namin. Hindi namin nakikita ang password mo.</span>
+            </p>
             <div className="flex items-center gap-3 text-[13px] text-muted">
               <div className="h-px flex-1 bg-border" />or with email<div className="h-px flex-1 bg-border" />
             </div>
