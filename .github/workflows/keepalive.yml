@@ -3,6 +3,9 @@
 # Repo settings → Secrets and variables → Actions: add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY.
 name: Keep Supabase awake
 
+# The job only calls the Supabase REST API, so the workflow token gets no rights at all.
+permissions: {}
+
 on:
   schedule:
     - cron: '23 4 */3 * *'
