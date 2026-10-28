@@ -6,6 +6,7 @@ import { Avatar } from './Avatar'
 import { Logo } from './Logo'
 import { MergePrompt } from './MergePrompt'
 import { LeaderboardDialog } from '../../pages/Leaderboard'
+import { PrivacyDialog } from '../../pages/Privacy'
 import { ProfilePanel } from './ProfilePanel'
 import { SettingsDialog } from './SettingsDialog'
 import { ThemeButton } from './ThemeButton'
@@ -20,7 +21,6 @@ const TITLES: [RegExp, string][] = [
   [/^\/casual/, 'Casual typing'],
   [/^\/practice/, 'Weak-keys practice'],
   [/^\/login/, 'Log in'],
-  [/^\/privacy/, 'Privacy policy'],
   [/^\/admin/, 'Developer view'],
   [/^\/u\//, 'Profile'],
 ]
@@ -34,7 +34,7 @@ const BACK: [RegExp, string, string][] = [
   [/^\/friends\/?$/, '/play', 'Back to the menu'],
   [/^\/casual\/./, '/play', 'Back to the menu'],
   [/^\/casual\/?$/, '/play', 'Back to the menu'],
-  [/^\/(practice|login|privacy|admin|u\/)/, '/play', 'Back to the menu'],
+  [/^\/(practice|login|admin|u\/)/, '/play', 'Back to the menu'],
 ]
 
 /** Each page gets its own tab title, which screen readers announce on navigation. */
@@ -96,6 +96,7 @@ export function AppShell() {
       <MergePrompt />
       <SettingsDialog />
       <LeaderboardDialog />
+      <PrivacyDialog />
       <ProfilePanel />
     </div>
   )
