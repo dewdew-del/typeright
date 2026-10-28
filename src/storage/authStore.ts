@@ -121,7 +121,11 @@ export const auth = {
     const user = useAuth.getState().user
     if (!supabase || !user) return 'You are not signed in.'
     const { error } = await supabase.from('profiles').update(patch).eq('id', user.id)
-    if (error) return error.code === '23505' ? 'That username is taken.' : friendly(error.message)
+    if (error) {
+      if (error.code === '23505') return 'That username is taken.'
+      if (error.code === '23514') return 'That name is not allowed. Try another one.'
+      return friendly(error.message)
+    }
     await useAuth.getState().reloadProfile()
     return null
   },
