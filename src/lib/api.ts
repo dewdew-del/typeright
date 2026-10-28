@@ -55,6 +55,9 @@ export const issueCasual = (lang: Lang, mode: CasualMode) => call<IssuedTest>('i
 /** Sends only the issue id and the raw keystroke log: the server computes the score. */
 export const submitResult = (issueId: string, log: Keystroke[]) => call<RankedResult>('submit-result', { issueId, log })
 
+/** Deletes the signed-in player's account and all their data. `confirm` must be their username. */
+export const deleteAccount = (confirm: string) => call<{ ok: true }>('delete-account', { confirm })
+
 export interface BoardRow {
   rank: number
   user_id: string
