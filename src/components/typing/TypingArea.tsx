@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react'
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import type { Keystroke, KeyStat, Summary, TypingMode } from '../../../supabase/functions/_shared/scoring'
 import { keyFromEvent } from '../../engine/keys'
 import { elapsedMs, type TypingSession } from '../../engine/session'
@@ -132,8 +132,11 @@ export function TypingArea({
   const clock = timeLimitMs === undefined ? formatTime(elapsed) : formatTime(timeLimitMs - elapsed)
 
   // Group characters into words so lines only break between words.
-  const words: { start: number; text: string }[] = []
-  for (const m of text.matchAll(/\S+\s*|\s+/g)) words.push({ start: m.index ?? 0, text: m[0] })
+  const words = useMemo(() => {
+    const out: { start: number; text: string }[] = []
+    for (const m of text.matchAll(/\S+\s*|\s+/g)) out.push({ start: m.index ?? 0, text: m[0] })
+    return out
+  }, [text])
 
   return (
     <div className="flex flex-col gap-7">
@@ -171,15 +174,12 @@ export function TypingArea({
             ref={contentRef}
             className={['relative transition-transform duration-150', focused ? '' : 'blur-[3px]'].join(' ')}
           >
-            {words.map(({ start, text: word }) => (
-              <span key={start} className="inline-block whitespace-pre">
-                {[...word].map((ch, j) => {
-                  const i = start + j
-                  const isCursor = i === cursor && !ended
-                  return <Char key={i} ch={ch} typed={typed[i]} isCursor={isCursor} spanRef={isCursor ? cursorRef : undefined} />
-                })}
-              </span>
-            ))}
+            {words.map(({ start, text: word }) => {
+              const end = start + word.length
+              // Only words whose letters changed are redrawn; the rest are skipped on each key and clock tick.
+              const cursorAt = !ended && cursor >= start && cursor < end ? cursor - start : -1
+              return <Word key={start} word={word} typedPart={typed.slice(start, end).join('')} cursorAt={cursorAt} cursorRef={cursorRef} />
+            })}
           </div>
         </div>
         {!focused && !ended && (
@@ -197,6 +197,28 @@ export function TypingArea({
     </div>
   )
 }
+
+const Word = memo(function Word({
+  word,
+  typedPart,
+  cursorAt,
+  cursorRef,
+}: {
+  word: string
+  /** What was typed over this word, as one string (a typed key is a single character). */
+  typedPart: string
+  /** Index of the cursor inside this word, or -1. */
+  cursorAt: number
+  cursorRef: Ref<HTMLSpanElement>
+}) {
+  return (
+    <span className="inline-block whitespace-pre">
+      {[...word].map((ch, j) => (
+        <Char key={j} ch={ch} typed={typedPart[j]} isCursor={j === cursorAt} spanRef={j === cursorAt ? cursorRef : undefined} />
+      ))}
+    </span>
+  )
+})
 
 function Char({ ch, typed, isCursor, spanRef }: { ch: string; typed?: string; isCursor: boolean; spanRef?: Ref<HTMLSpanElement> }) {
   const shown = ch === ' ' ? ' ' : ch
