@@ -14,7 +14,6 @@ import { LevelTest } from './pages/LevelTest'
 import { Login } from './pages/Login'
 import { Modes } from './pages/Modes'
 import { Practice } from './pages/Practice'
-import { Privacy } from './pages/Privacy'
 import { PublicProfile } from './pages/PublicProfile'
 import { RaceRoom } from './pages/RaceRoom'
 import { useUi } from './stores/settings'
@@ -33,8 +32,16 @@ function OpenLeaderboard() {
   return <Navigate to="/play" replace />
 }
 
+/** Old /privacy links (Google sign-in screen) open the privacy pop-up over the home page. */
+function OpenPrivacy() {
+  const open = useUi((s) => s.open)
+  useEffect(() => open('privacy'), [open])
+  return <Navigate to="/" replace />
+}
+
 const router = createBrowserRouter([
   { path: '/', element: <Landing /> },
+  { path: '/privacy', element: <OpenPrivacy /> },
   {
     element: <AppShell />,
     children: [
@@ -52,7 +59,6 @@ const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'profile', element: <OpenProfile /> },
       { path: 'leaderboard', element: <OpenLeaderboard /> },
-      { path: 'privacy', element: <Privacy /> },
       { path: 'admin', element: <Admin /> },
       { path: 'u/:username', element: <PublicProfile /> },
       { path: '*', element: <ComingSoon title="Page not found" stage={1} /> },

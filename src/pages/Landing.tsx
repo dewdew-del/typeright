@@ -5,8 +5,11 @@ import { ThemeButton } from '../components/layout/ThemeButton'
 import { WALLPAPERS, pickWallpaper } from '../components/wallpaper/Wallpapers'
 import { useActiveCount } from '../lib/presence'
 import { useResolvedTheme } from '../lib/theme'
+import { useUi } from '../stores/settings'
+import { PrivacyDialog } from './Privacy'
 
 export function Landing() {
+  const openPanel = useUi((s) => s.open)
   // A different wallpaper on each visit; it follows the light or dark theme.
   const [index] = useState(pickWallpaper)
   const night = useResolvedTheme() === 'dark'
@@ -56,8 +59,11 @@ export function Landing() {
       )}
 
       <footer className="absolute inset-x-0 bottom-0 z-10 px-5 py-4 text-right text-sm sm:px-8" style={{ color: colors.foot }}>
-        <Link to="/privacy" className="underline underline-offset-2 opacity-90 hover:opacity-100">Privacy policy</Link>
+        <button type="button" onClick={() => openPanel('privacy')} className="underline underline-offset-2 opacity-90 hover:opacity-100">
+          Privacy policy
+        </button>
       </footer>
+      <PrivacyDialog />
     </div>
   )
 }
