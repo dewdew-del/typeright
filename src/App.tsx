@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
+import { usePresence } from './lib/presence'
 import { useApplyTheme } from './lib/theme'
 import { ComingSoon } from './pages/ComingSoon'
 import { useUi } from './stores/settings'
@@ -49,5 +50,6 @@ const router = createBrowserRouter([
 
 export default function App() {
   useApplyTheme()
+  usePresence()
   return <RouterProvider router={router} />
 }
