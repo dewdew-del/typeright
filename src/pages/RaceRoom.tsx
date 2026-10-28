@@ -7,8 +7,10 @@ import { joinRoom, leaveRoom, loadRoom, resetRoom, startRace, submitRace, touchS
 import { parseRoomLabel, raceText } from '../lib/raceText'
 import { formatTime } from '../engine/stats'
 import { MIN_RACE_ACCURACY, raceScore } from '../../supabase/functions/_shared/scoring'
+import { playCue } from '../lib/sound'
 import { useAuth } from '../storage/authStore'
 import { useRaceChannel } from '../storage/useRaceChannel'
+import { useSettings } from '../stores/settings'
 
 type Loaded = NonNullable<Awaited<ReturnType<typeof loadRoom>>>
 
@@ -142,6 +144,7 @@ function Room({ roomId }: { roomId: string }) {
 
   return (
     <Results
+      meId={me.id}
       room={room}
       players={players}
       results={results}
@@ -299,6 +302,18 @@ function Race(props: {
   const countdown = Math.ceil((startsAt - now) / 1000)
   const { onProgress, onSubmitted } = props
 
+  // Sounds (only when Sound is on in Settings): a tick for each countdown second, a rising "go" at the start.
+  // Joining a race that is already running stays silent.
+  const wasWaiting = useRef(!started)
+  useEffect(() => {
+    if (countdown > 0 && useSettings.getState().sound) playCue('tick')
+  }, [countdown])
+  useEffect(() => {
+    if (!started || !wasWaiting.current) return
+    wasWaiting.current = false
+    if (useSettings.getState().sound) playCue('go')
+  }, [started])
+
   const handleProgress = useCallback(
     (correct: number, wpm: number) => {
       const pos = correct / room.text.length
@@ -351,6 +366,7 @@ function Race(props: {
 }
 
 function Results(props: {
+  meId: string
   room: Room
   players: RoomPlayer[]
   results: RaceRow[]
@@ -371,6 +387,13 @@ function Results(props: {
   const waiting = players.filter((p) => !results.some((r) => r.user_id === p.user_id))
   const capPassed = room.starts_at ? Date.now() > Date.parse(room.starts_at) + room.cap_s * 1000 + 5000 : true
   const over = room.status === 'done' || waiting.length === 0 || capPassed
+
+  // A short win or lose sound once the final standings are in (only when Sound is on in Settings).
+  const played = ranked.some((r) => r.user_id === props.meId)
+  const won = ranked[0]?.user_id === props.meId && ranked[0].finished
+  useEffect(() => {
+    if (over && played && useSettings.getState().sound) playCue(won ? 'win' : 'lose')
+  }, [over, played, won, room.starts_at])
 
   return (
     <>
