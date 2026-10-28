@@ -7,13 +7,15 @@ import { Logo } from './Logo'
 import { MergePrompt } from './MergePrompt'
 import { ThemeButton } from './ThemeButton'
 
-// The three pop-ups load in their own files: not needed until someone opens one.
+// The pop-ups load in their own files: not needed until someone opens one.
 const loadSettings = () => import('./SettingsDialog')
 const loadLeaderboard = () => import('../../pages/Leaderboard')
 const loadProfile = () => import('./ProfilePanel')
+const loadPrivacy = () => import('../../pages/Privacy')
 const SettingsDialog = lazy(() => loadSettings().then((m) => ({ default: m.SettingsDialog })))
 const LeaderboardDialog = lazy(() => loadLeaderboard().then((m) => ({ default: m.LeaderboardDialog })))
 const ProfilePanel = lazy(() => loadProfile().then((m) => ({ default: m.ProfilePanel })))
+const PrivacyDialog = lazy(() => loadPrivacy().then((m) => ({ default: m.PrivacyDialog })))
 
 /** Downloads the pop-ups quietly once the page is idle, so the first click opens instantly. */
 function usePrefetchPanels() {
@@ -38,7 +40,6 @@ const TITLES: [RegExp, string][] = [
   [/^\/casual/, 'Casual typing'],
   [/^\/practice/, 'Weak-keys practice'],
   [/^\/login/, 'Log in'],
-  [/^\/privacy/, 'Privacy policy'],
   [/^\/admin/, 'Developer view'],
   [/^\/u\//, 'Profile'],
 ]
@@ -52,7 +53,7 @@ const BACK: [RegExp, string, string][] = [
   [/^\/friends\/?$/, '/play', 'Back to the menu'],
   [/^\/casual\/./, '/play', 'Back to the menu'],
   [/^\/casual\/?$/, '/play', 'Back to the menu'],
-  [/^\/(practice|login|privacy|admin|u\/)/, '/play', 'Back to the menu'],
+  [/^\/(practice|login|admin|u\/)/, '/play', 'Back to the menu'],
 ]
 
 /** Each page gets its own tab title, which screen readers announce on navigation. */
@@ -120,7 +121,7 @@ export function AppShell() {
 /** Each pop-up is created the first time it is opened and then stays, as before. */
 function Panels() {
   const panel = useUi((s) => s.panel)
-  const seen = useRef({ settings: false, leaderboard: false, profile: false })
+  const seen = useRef({ settings: false, leaderboard: false, profile: false, privacy: false })
   if (panel) seen.current[panel] = true
   usePrefetchPanels()
   return (
@@ -128,6 +129,7 @@ function Panels() {
       {seen.current.settings && <SettingsDialog />}
       {seen.current.leaderboard && <LeaderboardDialog />}
       {seen.current.profile && <ProfilePanel />}
+      {seen.current.privacy && <PrivacyDialog />}
     </Suspense>
   )
 }
