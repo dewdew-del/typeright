@@ -22,8 +22,8 @@ export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
       theme: 'auto',
-      sound: false,
-      soundPack: 'default',
+      sound: true,
+      soundPack: 'softmech',
       showKeyboard: true,
       textSize: 'md',
       font: 'mono',
