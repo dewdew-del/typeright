@@ -12,6 +12,10 @@ import { useRaceChannel } from '../storage/useRaceChannel'
 
 type Loaded = NonNullable<Awaited<ReturnType<typeof loadRoom>>>
 
+/** Same room, players and results (the measured clock offset changes every poll and is ignored). */
+const sameRoomData = (a: Loaded, b: Loaded) =>
+  JSON.stringify([a.room, a.players, a.results]) === JSON.stringify([b.room, b.players, b.results])
+
 export function RaceRoom() {
   const { roomId = '' } = useParams()
   return (
@@ -34,7 +38,8 @@ function Room({ roomId }: { roomId: string }) {
   const refresh = useCallback(async () => {
     const d = await loadRoom(roomId)
     if (!d?.room) setMissing(true)
-    else setData(d)
+    // Keep the old object when nothing changed, so the page is not redrawn on every poll.
+    else setData((prev) => (prev && sameRoomData(prev, d) ? prev : d))
   }, [roomId])
 
   const { online, progress, send, clearProgress } = useRaceChannel(roomId, me, () => void refresh())
@@ -43,10 +48,10 @@ function Room({ roomId }: { roomId: string }) {
     void refresh()
   }, [refresh])
 
-  // Fallback polling in case a Realtime message is missed.
+  // Fallback polling in case a Realtime message is missed (Realtime "refresh" messages do the quick updates).
   const status = data?.room?.status
   useEffect(() => {
-    const id = window.setInterval(() => void refresh(), status === 'racing' ? 2500 : 4000)
+    const id = window.setInterval(() => void refresh(), status === 'racing' ? 5000 : 8000)
     return () => window.clearInterval(id)
   }, [refresh, status])
 
@@ -284,20 +289,26 @@ function Race(props: {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [mine, setMine] = useState({ pos: 0, wpm: 0 })
   const lastSent = useRef(0)
+  // The parent passes new callbacks on every render; reading them through refs keeps the typing area's
+  // props steady, so it is not redrawn each time a rival's progress or a poll arrives.
+  const onProgressRef = useRef(props.onProgress)
+  onProgressRef.current = props.onProgress
+  const onSubmittedRef = useRef(props.onSubmitted)
+  onSubmittedRef.current = props.onSubmitted
 
-  // Clock for the countdown and the time cap.
+  // Clock for the countdown and the time cap: fine steps for the countdown, coarser once the race runs.
+  const running = now >= startsAt
   useEffect(() => {
     const id = window.setInterval(() => {
       const t = Date.now() + clockOffset
       setNow(t)
       if (t >= startsAt + capMs) setFinishSignal((n) => (n === 0 ? 1 : n))
-    }, 100)
+    }, running ? 250 : 100)
     return () => window.clearInterval(id)
-  }, [clockOffset, startsAt, capMs])
+  }, [clockOffset, startsAt, capMs, running])
 
-  const started = now >= startsAt
+  const started = running
   const countdown = Math.ceil((startsAt - now) / 1000)
-  const { onProgress, onSubmitted } = props
 
   const handleProgress = useCallback(
     (correct: number, wpm: number) => {
@@ -306,10 +317,10 @@ function Race(props: {
       const t = Date.now()
       if (t - lastSent.current > 250 || pos >= 1) {
         lastSent.current = t
-        onProgress(pos, wpm)
+        onProgressRef.current(pos, wpm)
       }
     },
-    [room.text.length, onProgress],
+    [room.text.length],
   )
 
   const onFinish = useCallback(
@@ -318,9 +329,9 @@ function Race(props: {
       const { error } = await submitRace(room.id, r.log)
       if (error) setSubmitError(error)
       void touchStreak()
-      onSubmitted()
+      onSubmittedRef.current()
     },
-    [room.id, onSubmitted],
+    [room.id],
   )
 
   const progress = useMemo(() => ({ ...props.progress, [props.meId]: mine }), [props.progress, props.meId, mine])

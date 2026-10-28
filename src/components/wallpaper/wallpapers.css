@@ -25,8 +25,10 @@
 .wp-water { inset: 0; filter: hue-rotate(var(--hue, 0deg)); transition: filter .6s ease-out; }
 .wp-bw { will-change: transform; }
 .wp-blob { display: block; width: clamp(320px, 46vw, 780px); height: clamp(240px, 34vw, 560px); border-radius: 50%; filter: blur(60px); opacity: .8; animation: wp-drift var(--d, 16s) ease-in-out infinite alternate; }
-.wp-shine { inset: 0; background: radial-gradient(260px circle at var(--mx, 60%) var(--my, 50%), rgba(255,255,255,.32), transparent 70%); }
-.wp-aurora[data-night="1"] .wp-shine { mix-blend-mode: screen; background: radial-gradient(260px circle at var(--mx, 60%) var(--my, 50%), rgba(255,255,255,.22), transparent 70%); }
+/* The soft light is a 364px square holding the same gradient (182px reach), parked at 60% / 50% and moved with translate:
+   moving it never repaints the whole scene. */
+.wp-shine { left: 60%; top: 50%; width: 364px; height: 364px; margin: -182px 0 0 -182px; translate: var(--sx, 0px) var(--sy, 0px); background: radial-gradient(circle closest-side, rgba(255,255,255,.32), transparent); }
+.wp-aurora[data-night="1"] .wp-shine { mix-blend-mode: screen; background: radial-gradient(circle closest-side, rgba(255,255,255,.22), transparent); }
 @keyframes wp-drift { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(var(--x, 12vw), var(--y, 6vh)) scale(1.18); } 100% { transform: translate(calc(var(--x, 12vw) * -0.6), calc(var(--y, 6vh) * 1.4)) scale(.92); } }
 
 /* sun, moon, stars, clouds (hills and forest) */
@@ -53,8 +55,10 @@
 /* city */
 .wp-skyline { left: 0; bottom: 0; width: 100%; height: clamp(220px, 46%, 420px); }
 .wp-bd { fill: var(--bd); }
-.wp-win { fill: var(--wn); animation: wp-blinkw 6s steps(1) infinite; }
-.wp-win.lit { animation: none; fill: var(--wlit); opacity: 1; }
+.wp-win { fill: var(--wn); }
+.wp-wg { animation: wp-blinkw 6s steps(1) infinite; }
+.wp-winl { fill: var(--wlit); opacity: 0; }
+.wp-winl.lit { opacity: 1; }
 @keyframes wp-blinkw { 0%, 86% { opacity: 1; } 90%, 100% { opacity: .2; } }
 .wp-glow-city, .wp-glow-dots { margin: -150px 0 0 -150px; border-radius: 50%; transition: left .25s ease-out, top .25s ease-out; }
 .wp-glow-city { width: 300px; height: 300px; left: 70%; top: 60%; background: radial-gradient(circle, var(--glow), transparent 65%); }
@@ -68,7 +72,8 @@
 .wp-tree { transform-box: fill-box; transform-origin: 50% 100%; animation: wp-sway var(--d, 6s) ease-in-out var(--l, 0s) infinite alternate; }
 .wp-t1 .wp-tree { fill: var(--t1); } .wp-t2 .wp-tree { fill: var(--t2); } .wp-t3 .wp-tree { fill: var(--t3); }
 @keyframes wp-sway { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
-.wp-sunlight { inset: 0; mix-blend-mode: soft-light; background: radial-gradient(280px circle at var(--mx, 75%) var(--my, 25%), rgba(255,250,200,.95), transparent 70%); }
+/* Same gradient as before (fades out 196px from the centre) in a 392px square, parked at 75% / 25% and moved with translate. */
+.wp-sunlight { left: 75%; top: 25%; width: 392px; height: 392px; margin: -196px 0 0 -196px; translate: var(--sx, 0px) var(--sy, 0px); mix-blend-mode: soft-light; background: radial-gradient(circle closest-side, rgba(255,250,200,.95), transparent); }
 .wp-fly { width: 7px; height: 7px; border-radius: 50%; background: #fff8b0; box-shadow: 0 0 10px 4px rgba(255,248,160,.8); opacity: 0; transition: opacity .4s; }
 .wp-forest.on .wp-fly { opacity: 1; }
 .wp-forest:not([data-night="1"]) .wp-fly { display: none; }

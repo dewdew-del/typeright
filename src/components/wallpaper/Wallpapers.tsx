@@ -90,8 +90,11 @@ function KeysScene({ night }: { night: boolean }) {
     ref,
     (p, root) => {
       const r0 = root.getBoundingClientRect()
-      root.querySelectorAll<HTMLElement>('.wp-key').forEach((el) => {
-        const r = el.getBoundingClientRect()
+      const els = root.querySelectorAll<HTMLElement>('.wp-key')
+      // Measure every key first, then change them: mixing the two forces a new layout for each key.
+      const rects = Array.from(els, (el) => el.getBoundingClientRect())
+      els.forEach((el, i) => {
+        const r = rects[i]
         const cx = r.left + r.width / 2 - (r0.left + p.x)
         const cy = r.top + r.height / 2 - (r0.top + p.y)
         const d = Math.hypot(cx, cy) || 1
@@ -169,8 +172,9 @@ function AuroraScene({ night }: { night: boolean }) {
       // The colours follow the mouse across the whole scene and shift shade as it moves.
       target.current = { x: (p.px - 0.5) * 520, y: (p.py - 0.5) * 300 }
       root.querySelector<HTMLElement>('.wp-water')?.style.setProperty('--hue', `${(p.px - 0.5) * 240}deg`)
-      root.style.setProperty('--mx', `${p.px * 100}%`)
-      root.style.setProperty('--my', `${p.py * 100}%`)
+      // The soft light is a small gradient moved with transform (it starts at 60% / 50%), so a mouse move repaints nothing big.
+      root.style.setProperty('--sx', `${(p.px - 0.6) * root.clientWidth}px`)
+      root.style.setProperty('--sy', `${(p.py - 0.5) * root.clientHeight}px`)
       kick()
     },
     (root) => {
@@ -214,9 +218,13 @@ function grainColorAt(root: HTMLElement, x: number, y: number): string {
   return SAND_ON_SKY
 }
 
+/** Most grains alive at once, so a fast mouse swipe cannot pile up hundreds of animated elements. */
+const MAX_GRAINS = 60
+
 function HillsScene({ night }: { night: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const lastGrain = useRef({ x: -99, y: -99 })
+  const liveGrains = useRef(0)
   usePointerFx(
     ref,
     (p, root) => {
@@ -225,6 +233,7 @@ function HillsScene({ night }: { night: boolean }) {
       })
       // Sand blown off the cursor: a few grains drift away in the wind and fade.
       if (Math.hypot(p.x - lastGrain.current.x, p.y - lastGrain.current.y) < 14) return
+      if (liveGrains.current >= MAX_GRAINS) return
       lastGrain.current = { x: p.x, y: p.y }
       const color = night ? null : grainColorAt(root, p.x, p.y)
       for (let i = 0; i < 3; i++) {
@@ -236,6 +245,7 @@ function HillsScene({ night }: { night: boolean }) {
         const size = 2 + Math.random() * 3
         grain.style.width = grain.style.height = `${size}px`
         root.appendChild(grain)
+        liveGrains.current += 1
         const dx = 20 + Math.random() * 70
         const dy = -25 + Math.random() * 70
         grain
@@ -246,12 +256,22 @@ function HillsScene({ night }: { night: boolean }) {
             ],
             { duration: 700 + Math.random() * 600, easing: 'ease-out' },
           )
-          .finished.then(() => grain.remove(), () => grain.remove())
+          .finished.then(
+            () => {
+              grain.remove()
+              liveGrains.current = Math.max(0, liveGrains.current - 1)
+            },
+            () => {
+              grain.remove()
+              liveGrains.current = Math.max(0, liveGrains.current - 1)
+            },
+          )
       }
     },
     (root) => {
       root.querySelectorAll<SVGElement>('.wp-hill').forEach((h) => (h.style.transform = ''))
       root.querySelectorAll('.wp-grain').forEach((g) => g.remove())
+      liveGrains.current = 0
     },
   )
   const hills = [
@@ -291,6 +311,8 @@ const CITY = (() => {
   return { buildings, windows }
 })()
 
+const CITY_BLINK_GROUPS = [0, 1, 2, 3, 4, 5].map((delay) => ({ delay, windows: CITY.windows.filter((w) => w.delay === delay) }))
+
 function CityScene({ night }: { night: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const lit = useRef(new Set<number>())
@@ -307,7 +329,7 @@ function CityScene({ night }: { night: boolean }) {
       if (!svg || !m) return
       const rect = root.getBoundingClientRect()
       const pt = new DOMPoint(rect.left + p.x, rect.top + p.y).matrixTransform(m.inverse())
-      const els = svg.querySelectorAll<SVGElement>('.wp-win')
+      const els = svg.querySelectorAll<SVGElement>('.wp-winl')
       CITY.windows.forEach((w, i) => {
         const on = Math.hypot(w.x - pt.x, w.y - pt.y) < 24
         if (on !== lit.current.has(i)) {
@@ -318,7 +340,7 @@ function CityScene({ night }: { night: boolean }) {
       })
     },
     (root) => {
-      root.querySelectorAll('.wp-win.lit').forEach((e) => e.classList.remove('lit'))
+      root.querySelectorAll('.wp-winl.lit').forEach((e) => e.classList.remove('lit'))
       lit.current.clear()
     },
   )
@@ -328,8 +350,17 @@ function CityScene({ night }: { night: boolean }) {
         {CITY.buildings.map((b) => (
           <rect key={b.x} className="wp-bd" x={b.x} y={280 - b.h} width={b.w} height={b.h} />
         ))}
+        {/* The blinking is one animation per delay (6) instead of one per window (400): same look, far less work. */}
+        {CITY_BLINK_GROUPS.map((g) => (
+          <g key={g.delay} className="wp-wg" style={{ animationDelay: `-${g.delay}s` }}>
+            {g.windows.map((w, i) => (
+              <rect key={i} className="wp-win" x={w.x} y={w.y} width={4} height={6} />
+            ))}
+          </g>
+        ))}
+        {/* Windows near the mouse light up: a steady copy drawn on top, shown with a class. */}
         {CITY.windows.map((w, i) => (
-          <rect key={i} className="wp-win" style={{ animationDelay: `-${w.delay}s` }} x={w.x} y={w.y} width={4} height={6} />
+          <rect key={i} className="wp-winl" x={w.x} y={w.y} width={4} height={6} />
         ))}
       </svg>
       <div className="wp-glow-city" />
@@ -399,8 +430,9 @@ function ForestScene({ night }: { night: boolean }) {
     ref,
     (p, root) => {
       root.classList.add('on')
-      root.style.setProperty('--mx', `${p.px * 100}%`)
-      root.style.setProperty('--my', `${p.py * 100}%`)
+      // The sunlight is a small gradient moved with transform (it starts at 75% / 25%), so a mouse move repaints nothing big.
+      root.style.setProperty('--sx', `${(p.px - 0.75) * root.clientWidth}px`)
+      root.style.setProperty('--sy', `${(p.py - 0.25) * root.clientHeight}px`)
       root.querySelectorAll<SVGElement>('.wp-trees').forEach((el) => {
         el.style.transform = `translateX(${-(p.px - 0.5) * Number(el.dataset.s)}px)`
       })

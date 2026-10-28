@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { QWERTY, targetForChar } from '../../layouts/qwerty'
 import { FINGER_COLOR_VAR, FINGER_NAMES, type KeyDef } from '../../layouts/types'
 
@@ -11,7 +11,8 @@ interface Props {
   colorFingers?: boolean
 }
 
-export function Keyboard({ activeChar, pressedCode, colorFingers = true }: Props) {
+/** Memoised: the typing clock re-renders the page 5 times a second, but the keys only change with the next letter. */
+export const Keyboard = memo(function Keyboard({ activeChar, pressedCode, colorFingers = true }: Props) {
   const target = activeChar ? targetForChar(activeChar) : undefined
   const activeCodes = new Set<string>()
   if (target) {
@@ -52,9 +53,9 @@ export function Keyboard({ activeChar, pressedCode, colorFingers = true }: Props
       </div>
     </div>
   )
-}
+})
 
-function Cap({
+const Cap = memo(function Cap({
   def,
   active,
   pressed,
@@ -113,4 +114,4 @@ function Cap({
       )}
     </div>
   )
-}
+})

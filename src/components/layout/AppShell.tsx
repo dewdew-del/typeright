@@ -1,14 +1,32 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../storage/authStore'
 import { useUi } from '../../stores/settings'
 import { Avatar } from './Avatar'
 import { Logo } from './Logo'
 import { MergePrompt } from './MergePrompt'
-import { LeaderboardDialog } from '../../pages/Leaderboard'
-import { ProfilePanel } from './ProfilePanel'
-import { SettingsDialog } from './SettingsDialog'
 import { ThemeButton } from './ThemeButton'
+
+// The three pop-ups load in their own files: not needed until someone opens one.
+const loadSettings = () => import('./SettingsDialog')
+const loadLeaderboard = () => import('../../pages/Leaderboard')
+const loadProfile = () => import('./ProfilePanel')
+const SettingsDialog = lazy(() => loadSettings().then((m) => ({ default: m.SettingsDialog })))
+const LeaderboardDialog = lazy(() => loadLeaderboard().then((m) => ({ default: m.LeaderboardDialog })))
+const ProfilePanel = lazy(() => loadProfile().then((m) => ({ default: m.ProfilePanel })))
+
+/** Downloads the pop-ups quietly once the page is idle, so the first click opens instantly. */
+function usePrefetchPanels() {
+  useEffect(() => {
+    const run = () => void Promise.all([loadSettings(), loadLeaderboard(), loadProfile()]).catch(() => {})
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(run, { timeout: 4000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = window.setTimeout(run, 2000)
+    return () => window.clearTimeout(id)
+  }, [])
+}
 
 const TITLES: [RegExp, string][] = [
   [/^\/play/, 'Choose a mode'],
@@ -94,10 +112,23 @@ export function AppShell() {
         <Outlet />
       </div>
       <MergePrompt />
-      <SettingsDialog />
-      <LeaderboardDialog />
-      <ProfilePanel />
+      <Panels />
     </div>
+  )
+}
+
+/** Each pop-up is created the first time it is opened and then stays, as before. */
+function Panels() {
+  const panel = useUi((s) => s.panel)
+  const seen = useRef({ settings: false, leaderboard: false, profile: false })
+  if (panel) seen.current[panel] = true
+  usePrefetchPanels()
+  return (
+    <Suspense fallback={null}>
+      {seen.current.settings && <SettingsDialog />}
+      {seen.current.leaderboard && <LeaderboardDialog />}
+      {seen.current.profile && <ProfilePanel />}
+    </Suspense>
   )
 }
 

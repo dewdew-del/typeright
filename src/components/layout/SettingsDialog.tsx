@@ -1,13 +1,8 @@
 import type { ReactNode } from 'react'
+import { FONT_FAMILY } from '../../lib/fonts'
 import { playKeySound, SOUND_PACKS, type SoundPack } from '../../lib/sound'
 import { useSettings, useUi, type TextSize, type TypingFont } from '../../stores/settings'
 import { Overlay } from './Overlay'
-
-export const FONT_FAMILY: Record<TypingFont, string> = {
-  mono: "ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace",
-  sans: "'Inter Variable', system-ui, 'Segoe UI', Roboto, sans-serif",
-  serif: "Georgia, 'Times New Roman', serif",
-}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
