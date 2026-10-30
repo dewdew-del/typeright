@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { BoardTable } from '../components/leaderboard/BoardTable'
 import { Overlay } from '../components/layout/Overlay'
 import { CASUAL_MODES, getCasualBoard, type BoardRow, type CasualMode } from '../lib/api'
+import { useOnline } from '../lib/online'
 import { useUi } from '../stores/settings'
 
 /** The leaderboard as a pop-up: one list per casual length, for everyone. */
@@ -12,9 +13,10 @@ export function LeaderboardDialog() {
   const [rows, setRows] = useState<BoardRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const open = panel === 'leaderboard'
+  const online = useOnline()
 
   useEffect(() => {
-    if (!open) return
+    if (!open || !online) return
     let live = true
     setRows(null)
     void getCasualBoard(mode).then((r) => {
@@ -25,7 +27,7 @@ export function LeaderboardDialog() {
     return () => {
       live = false
     }
-  }, [open, mode])
+  }, [open, mode, online])
 
   if (!open) return null
 
@@ -41,7 +43,7 @@ export function LeaderboardDialog() {
           </button>
         ))}
       </div>
-      <BoardTable rows={rows} error={error} showDuration={mode === 'endless'} empty="No results yet. Play casual typing while signed in to be first!" />
+      <BoardTable rows={online ? rows : []} error={online ? error : 'The leaderboard needs internet. It loads when you are back online.'} showDuration={mode === 'endless'} empty="No results yet. Play casual typing while signed in to be first!" />
       <Link to={`/casual/play?length=${mode}`} onClick={close} className="self-start rounded-xl bg-accent px-5 py-2.5 font-bold text-accent-contrast hover:opacity-90">
         Play casual typing
       </Link>

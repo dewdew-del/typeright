@@ -5,6 +5,7 @@ import { useUi } from '../../stores/settings'
 import { Avatar } from './Avatar'
 import { Logo } from './Logo'
 import { MergePrompt } from './MergePrompt'
+import { useOnline } from '../../lib/online'
 import { ThemeButton } from './ThemeButton'
 
 // The pop-ups load in their own files: not needed until someone opens one.
@@ -68,6 +69,7 @@ function usePageTitle() {
 /** Header (logo, settings, theme button, Login) above every page inside the app. */
 export function AppShell() {
   const open = useUi((s) => s.open)
+  const online = useOnline()
   usePageTitle()
   return (
     <div className="min-h-full bg-bg text-text">
@@ -83,6 +85,11 @@ export function AppShell() {
           <Logo to="/" />
         </div>
         <div className="flex items-center gap-2.5">
+          {!online && (
+            <span role="status" title="No internet. Friends and the leaderboard need it; lessons and casual typing still work." className="rounded-full border border-border bg-surface-2 px-3 py-1.5 text-sm font-bold text-muted">
+              Offline
+            </span>
+          )}
           <button
             type="button"
             onClick={() => open('leaderboard')}

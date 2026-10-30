@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LESSONS, lessonById } from '../content/lessons/catalog'
-import { currentLesson, emptyProgress, hasProgress, lessonStatus, mergeProgress, recordAttempt, starsFor } from './progress'
+import { currentLesson, emptyProgress, hasProgress, lessonStatus, mergeProgress, reconcileProgress, recordAttempt, starsFor } from './progress'
 
 const l = (id: string) => lessonById(id)!
 
@@ -74,5 +74,35 @@ describe('mergeProgress', () => {
   it('hasProgress is false for an empty journey', () => {
     expect(hasProgress(emptyProgress())).toBe(false)
     expect(hasProgress(recordAttempt(emptyProgress(), l('l001'), 0, 0))).toBe(true)
+  })
+})
+
+describe('reconcileProgress (same account, local copy may be ahead of the server)', () => {
+  const rec = (stars: number, attempts: number, bestWpm = 20) => ({ stars, bestWpm, bestAccuracy: 95, passed: stars > 0, attempts })
+
+  it('keeps the best of each lesson without adding attempts twice', () => {
+    const local = { ...emptyProgress(), lessons: { l001: rec(3, 4), l002: rec(1, 2) } }
+    const remote = { ...emptyProgress(), lessons: { l001: rec(2, 3), l003: rec(2, 1) } }
+    const out = reconcileProgress(local, remote)
+    expect(out.lessons.l001).toMatchObject({ stars: 3, attempts: 4 })
+    expect(out.lessons.l002).toBeDefined()
+    expect(out.lessons.l003).toBeDefined()
+  })
+
+  it('takes the key stats that have more attempts instead of summing them', () => {
+    const local = { ...emptyProgress(), keyStats: { a: { attempts: 10, misses: 2, totalMs: 900 }, b: { attempts: 3, misses: 0, totalMs: 200 } } }
+    const remote = { ...emptyProgress(), keyStats: { a: { attempts: 8, misses: 1, totalMs: 700 }, c: { attempts: 5, misses: 1, totalMs: 400 } } }
+    const out = reconcileProgress(local, remote)
+    expect(out.keyStats.a).toEqual({ attempts: 10, misses: 2, totalMs: 900 })
+    expect(out.keyStats.b).toBeDefined()
+    expect(out.keyStats.c).toBeDefined()
+  })
+
+  it('unions tested-out stages and gives the same result when applied twice', () => {
+    const local = { ...emptyProgress(), testedOutStages: [1, 3] }
+    const remote = { ...emptyProgress(), testedOutStages: [2, 3] }
+    const once = reconcileProgress(local, remote)
+    expect(once.testedOutStages).toEqual([1, 2, 3])
+    expect(reconcileProgress(once, once)).toEqual(once)
   })
 })

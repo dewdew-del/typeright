@@ -79,6 +79,38 @@ export function hasProgress(p: JourneyProgress): boolean {
   return Object.keys(p.lessons).length > 0 || Object.keys(p.keyStats).length > 0 || p.testedOutStages.length > 0
 }
 
+/**
+ * Joins two copies of the SAME account's progress (the desktop copy kept offline and the server's).
+ * Unlike mergeProgress nothing is summed, so applying it twice, or to a copy that already contains the
+ * other, never double counts: best of each lesson, the larger key stat, all skipped stages.
+ */
+export function reconcileProgress(a: JourneyProgress, b: JourneyProgress): JourneyProgress {
+  const lessons: Record<string, LessonRecord> = { ...b.lessons }
+  for (const [id, x] of Object.entries(a.lessons)) {
+    const y = lessons[id]
+    lessons[id] = y
+      ? {
+          stars: Math.max(x.stars, y.stars),
+          bestWpm: Math.max(x.bestWpm, y.bestWpm),
+          bestAccuracy: Math.max(x.bestAccuracy, y.bestAccuracy),
+          passed: x.passed || y.passed,
+          attempts: Math.max(x.attempts, y.attempts),
+        }
+      : x
+  }
+  const keyStats: Record<string, KeyStat> = { ...b.keyStats }
+  for (const [ch, s] of Object.entries(a.keyStats)) {
+    const t = keyStats[ch]
+    keyStats[ch] = !t || s.attempts >= t.attempts ? s : t
+  }
+  return {
+    v: 1,
+    lessons,
+    keyStats,
+    testedOutStages: [...new Set([...a.testedOutStages, ...b.testedOutStages])].sort((m, n) => m - n),
+  }
+}
+
 /** Combines guest progress with an account's: best of each lesson, summed key stats, all skipped stages. */
 export function mergeProgress(a: JourneyProgress, b: JourneyProgress): JourneyProgress {
   const lessons: Record<string, LessonRecord> = { ...b.lessons }
