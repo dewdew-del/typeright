@@ -7,6 +7,7 @@ import { SENTENCES_EN } from '../content/sentences/en'
 import { SENTENCES_FIL } from '../content/sentences/fil'
 import { createRng } from '../engine/rng'
 import { CASUAL_MODES, issueCasual, submitResult, touchStreak, type CasualMode, type IssuedTest, type RankedResult } from '../lib/api'
+import { useOnline } from '../lib/online'
 import { useAuth } from '../storage/authStore'
 import { useProgress } from '../storage/progressStore'
 
@@ -96,7 +97,8 @@ export function CasualPlay() {
   const signedIn = useAuth((s) => s.user !== null)
   // Offline or server trouble: let a signed-in player keep typing without the leaderboard.
   const [practiceOnly, setPracticeOnly] = useState(false)
-  const online = signedIn && !practiceOnly
+  const hasInternet = useOnline() // offline: straight to practice, no error screen
+  const online = signedIn && !practiceOnly && hasInternet
 
   const [round, setRound] = useState(() => Math.floor(Math.random() * 2 ** 31))
   const [finishSignal, setFinishSignal] = useState(0)

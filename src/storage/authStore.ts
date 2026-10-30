@@ -1,8 +1,10 @@
 import type { Session, User } from '@supabase/supabase-js'
 import { create } from 'zustand'
+import { emptyProgress } from '../engine/progress'
 import { captchaToken } from '../lib/captcha'
 import { IS_DESKTOP } from '../lib/platform'
 import { supabase } from '../lib/supabase'
+import { useProgress } from './progressStore'
 
 export interface Profile {
   id: string
@@ -150,7 +152,10 @@ export const auth = {
   },
 
   async signOut() {
-    await supabase?.auth.signOut()
+    // Offline, a global sign-out cannot reach the server and would leave the session in place.
+    await supabase?.auth.signOut({ scope: navigator.onLine ? 'global' : 'local' })
+    // The progress on this device belongs to the account that just left.
+    useProgress.getState().replace(emptyProgress(), null)
   },
 }
 

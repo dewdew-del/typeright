@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { NeedsPlayer, PlayingAs } from '../components/race/NeedsPlayer'
 import { createRoom, joinRoom, listPublicRooms } from '../lib/api'
 import { Choice } from '../components/ui/Choice'
+import { NeedsInternet } from '../components/ui/NeedsInternet'
+import { useOnline } from '../lib/online'
 import { DIFFICULTIES, RACE_TEXT_TYPES, raceText, roomLabel, type Difficulty, type RaceTextType } from '../lib/raceText'
 import { useAuth } from '../storage/authStore'
 
@@ -28,6 +30,8 @@ function PictureButton({ to, title, art }: { to: string; title: string; art: Rea
 
 /** Play with friends: two big choices, as in the design. */
 export function Friends() {
+  const online = useOnline()
+  if (!online) return <main className="px-6 pb-16 pt-6"><NeedsInternet what="Playing with friends" /></main>
   return (
     <main className="mx-auto max-w-[880px] px-6 pb-16 pt-6">
       <h1 className="mb-8 text-center text-3xl font-bold tracking-tight sm:text-4xl">Play with friends</h1>
@@ -76,6 +80,7 @@ export function Friends() {
 }
 
 export function CreateRoom() {
+  const online = useOnline()
   const navigate = useNavigate()
   const [visibility, setVisibility] = useState<'private' | 'public'>('private')
   const [type, setType] = useState<RaceTextType>('Sentences')
@@ -91,6 +96,8 @@ export function CreateRoom() {
     if (id) navigate(`/race/${id}`)
     else setError(err)
   }
+
+  if (!online) return <main className="px-6 pb-16 pt-2"><NeedsInternet what="Creating a room" /></main>
 
   const card = (v: 'private' | 'public', label: string, note: string, icon: ReactNode) => {
     const on = visibility === v
@@ -148,6 +155,7 @@ export function CreateRoom() {
 }
 
 export function JoinRoom() {
+  const online = useOnline()
   const navigate = useNavigate()
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -172,6 +180,8 @@ export function JoinRoom() {
     if (id) navigate(`/race/${id}`)
     else setError(err)
   }
+
+  if (!online) return <main className="px-6 pb-16 pt-2"><NeedsInternet what="Joining a room" /></main>
 
   return (
     <main className="mx-auto flex max-w-[680px] flex-col gap-7 px-6 pb-16 pt-2">
