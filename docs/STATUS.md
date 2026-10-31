@@ -44,9 +44,9 @@ Visitors get the new version on their next visit (the service worker updates in 
 
 ## Next steps, in suggested order
 1. Done: URL settings confirmed and Google login tested on the live site.
-2. Create a public GitHub repo, push the code, and connect Vercel to it for automatic deploys.
-   Add the repo secrets `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` so `.github/workflows/keepalive.yml` runs.
-3. Rebuild the desktop installer (`npm run desktop:build`) to include the latest changes.
+2. GitHub repo is done (https://github.com/dewdew-del/typeright). Still to do: connect Vercel to it for automatic deploys,
+   and add the repo secrets `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` so `.github/workflows/keepalive.yml` runs.
+3. Desktop offline app, stage 3 and 4 (see "Desktop offline mode" below): rebuild the installer (`npm run desktop:build`), then test it with the internet off.
 4. Portfolio extras:
    - README with screenshots, features, stack, diagram and run steps
    - A "Problem I solved" note (anti-cheat and realtime races)
@@ -56,6 +56,15 @@ Visitors get the new version on their next visit (the service worker updates in 
    - Stop Filipino sentences repeating within a few lines
    - Code-split the 690 KB app bundle
    - Rotate the Google client secret (it appeared in a screenshot)
+
+## Desktop offline mode (30 Oct 2026)
+Goal: the desktop app works offline (lessons, level test, casual typing, weak keys, no login needed); only Friends races and the Leaderboard need internet.
+- **Project folder is now `D:\dev\typeright`** (the old copy in OneDrive Desktop is stale; the UI and QA helper sessions may still point at it).
+- Merged the QA branch into `main`: race countdown sounds, security hardening, CSP, anti-cheat flags, privacy pop-up. See `docs/SECURITY.md`.
+- Leaderboard accuracy minimum is temporarily 0 (`MIN_ACCURACY` in `supabase/functions/submit-result/index.ts`; migration `..._casual_any_accuracy.sql`). Intended rule: 95.
+- **Stage 2 done (commit 36168aa):** desktop keeps progress in localStorage (`src/storage/progressStore.ts`, `dirty` flag); `progressSync.ts` never replaces local progress with a failed or empty server read and retries unsent changes (online event, every 30 s); `reconcileProgress` in `src/engine/progress.ts` (tested); Offline badge in `AppShell`; `NeedsInternet` card on Friends pages and the Leaderboard pop-up; casual typing goes to practice when offline; sign-out works offline. The Offline badge and Needs-internet screens also apply to the website once deployed.
+- **Next:** stage 3, rebuild the installer; stage 4, test it with the internet off (progress survives closing the app, sync after reconnecting, a desktop-vs-web race, email login on desktop).
+- The live website has NOT been redeployed since these changes. Deploy command is above; the publishable key is `sb_publishable_vGb2YVtISTsKioYh0Cdqtg_wJ0vbGzv` (public).
 
 ## Changes on 27 Oct 2026
 - Accuracy now counts the letters on screen, so deleting a wrong letter brings it back to 100% (free mode). Stop-on-error mode still counts every wrong key. Live in the code; deployed to the Edge Functions `issue-test` and `submit-result`. `submit-race` still has the old rule until it is redeployed. The website needs a Vercel deploy to show the fix.
