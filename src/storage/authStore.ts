@@ -73,6 +73,32 @@ export const auth = {
     return error ? friendly(error.message) : null
   },
 
+  /**
+   * Email sign-up (used by the desktop app, which has no Google login).
+   * Returns an error message, or null on success. `needsConfirm` is true when Supabase wants the email confirmed first.
+   */
+  async signUp(email: string, password: string, username: string): Promise<{ error: string | null; needsConfirm: boolean }> {
+    if (!supabase) return { error: 'Accounts are not set up yet.', needsConfirm: false }
+    // The sign-up trigger takes no dots (profile edits do); anything else it would quietly replace.
+    if (!/^[A-Za-z0-9_-]{3,20}$/.test(username)) return { error: 'Username: 3 to 20 letters, numbers, _ or -', needsConfirm: false }
+    const free = await supabase.rpc('username_available', { name: username })
+    if (free.error) return { error: friendly(free.error.message), needsConfirm: false }
+    if (free.data === false) return { error: 'That username is taken.', needsConfirm: false }
+    const captcha = await robotCheck()
+    if (captcha.error) return { error: captcha.error, needsConfirm: false }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username }, captchaToken: captcha.token },
+    })
+    if (error) return { error: friendly(error.message), needsConfirm: false }
+    // Supabase hides "email already used" as a fake user with no identities.
+    if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      return { error: 'That email already has an account. Log in instead.', needsConfirm: false }
+    }
+    return { error: null, needsConfirm: !data.session }
+  },
+
   /** Google sign-in. For a guest, links Google to the guest account instead (same id). */
   async google(): Promise<string | null> {
     if (!supabase) return 'Accounts are not set up yet.'

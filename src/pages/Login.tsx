@@ -23,7 +23,9 @@ function GoogleLogo() {
 export function Login() {
   const { user, isAnonymous, ready } = useAuth()
   const [reset, setReset] = useState(false)
+  const [signup, setSignup] = useState(false) // desktop only: Google creates accounts on the website
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,6 +48,18 @@ export function Login() {
       const err = await auth.resetPassword(email)
       if (err) setError(err)
       else setNotice('If that email has an account, a reset link is on its way.')
+    } else if (signup) {
+      if (password.length < 8) {
+        setError('Password needs at least 8 characters.')
+      } else {
+        const res = await auth.signUp(email, password, username)
+        if (res.error) setError(res.error)
+        else if (res.needsConfirm) {
+          setNotice('Account created. Check your email and click the link to confirm, then log in here.')
+          setSignup(false)
+        }
+        // With no confirm step the new session is active and the page moves on by itself.
+      }
     } else {
       setError(await auth.signIn(email, password))
     }
@@ -61,12 +75,14 @@ export function Login() {
           </p>
         )}
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">{reset ? 'Reset your password' : 'Log in'}</h1>
+          <h1 className="text-[26px] font-bold tracking-tight">{reset ? 'Reset your password' : signup ? 'Create account' : 'Log in'}</h1>
           <p className="mt-1.5 text-[15px] text-muted">
             {reset
               ? 'We will email you a link to set a new password.'
-              : IS_DESKTOP
-                ? 'Log in with your email and password. Signed up with Google? Set a password in your profile on the TypeRight website first.'
+              : signup
+                ? 'Pick a username, then an email and password. Your progress will be saved to this account.'
+                : IS_DESKTOP
+                ? 'Log in with your email and password, or create a new account. Signed up with Google on the website? Set a password in your profile there first.'
                 : isAnonymous
                 ? 'Link Google to keep your guest results.'
                 : 'Save your progress and get on the leaderboard. New here? Google creates your account.'}
@@ -96,6 +112,12 @@ export function Login() {
         )}
 
         <form onSubmit={submit} className="flex flex-col gap-3.5">
+          {signup && (
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">
+              Username
+              <input className={input} value={username} onChange={(e) => setUsername(e.target.value)} placeholder="3 to 20 letters or numbers" autoComplete="username" minLength={3} maxLength={20} required />
+            </label>
+          )}
           <label className="flex flex-col gap-1.5 text-sm font-semibold">
             Email
             <input className={input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />
@@ -103,18 +125,19 @@ export function Login() {
           {!reset && (
             <label className="flex flex-col gap-1.5 text-sm font-semibold">
               Password
-              <input className={input} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+              <input className={input} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={signup ? 'new-password' : 'current-password'} required />
             </label>
           )}
           {error && <p role="alert" className="text-sm font-semibold text-bad">{error}</p>}
           {notice && <p role="status" className="text-sm font-semibold text-good">{notice}</p>}
           <button type="submit" disabled={busy} className="rounded-xl bg-accent py-3.5 text-base font-bold text-accent-contrast hover:opacity-90 disabled:opacity-60">
-            {busy ? 'Please wait…' : reset ? 'Send reset link' : 'Log in'}
+            {busy ? 'Please wait…' : reset ? 'Send reset link' : signup ? 'Create account' : 'Log in'}
           </button>
           <button
             type="button"
             onClick={() => {
               setReset(!reset)
+              setSignup(false)
               setError(null)
               setNotice(null)
             }}
@@ -122,6 +145,19 @@ export function Login() {
           >
             {reset ? 'Back to log in' : 'Forgot password?'}
           </button>
+          {IS_DESKTOP && !reset && (
+            <button
+              type="button"
+              onClick={() => {
+                setSignup(!signup)
+                setError(null)
+                setNotice(null)
+              }}
+              className="self-center text-sm font-semibold text-accent"
+            >
+              {signup ? 'Already have an account? Log in' : 'New here? Create an account'}
+            </button>
+          )}
         </form>
 
         <div className="flex flex-col gap-2 border-t border-border pt-4 text-center">
