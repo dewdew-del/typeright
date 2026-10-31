@@ -99,6 +99,8 @@ export async function resolveMerge(merge: boolean) {
 
 let started = false
 let reconciling = false
+/** The account whose server copy this page has already read once. */
+let checkedUserId: string | null = null
 
 /** Brings this device and the signed-in account in step. Safe to call any time; does nothing when there is nothing to do. */
 async function reconcile() {
@@ -106,18 +108,21 @@ async function reconcile() {
   const userId = auth.user?.id
   if (!auth.ready || !userId || reconciling || useMergePrompt.getState().pending) return
   const store = useProgress.getState()
-  if (store.ownerId === userId && !store.dirty) return // same user, nothing unsent: the local copy is current
+  // Same user, nothing unsent, and already checked against the server since this page started: the local copy is current.
+  // The first check per start is never skipped: another device may have added progress since this copy was saved.
+  if (store.ownerId === userId && !store.dirty && checkedUserId === userId) return
   reconciling = true
   try {
     const remote = await loadRemote(userId)
     if (!remote) return // offline or server trouble: keep the local copy, try again later
+    checkedUserId = userId
     const local = useProgress.getState().progress
 
     if (store.ownerId === userId) {
-      // Back online with changes made while offline: join them with the account's copy, then send it.
+      // Back online with changes made while offline, or a fresh start: join the local copy with the account's, then send what differs.
       const merged = reconcileProgress(local, remote)
       useProgress.getState().replace(merged, userId)
-      if (!(await save(userId, remote, merged, true))) useProgress.setState({ dirty: true })
+      if (!(await save(userId, remote, merged, store.dirty))) useProgress.setState({ dirty: true })
     } else if (auth.isAnonymous && store.ownerId === null) {
       // A guest starting online play keeps everything from this tab; nothing to ask.
       const merged = mergeProgress(local, remote)
@@ -144,6 +149,7 @@ export function startProgressSync() {
     if (userId === lastUserId) return
     lastUserId = userId
     if (!userId) {
+      checkedUserId = null
       // The website: an account's progress must not stay in the tab after signing out. The desktop app
       // keeps its copy, because "no session" also happens when it starts offline (signing out clears it).
       const store = useProgress.getState()
