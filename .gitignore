@@ -7,3 +7,7 @@ dist
 src-tauri/target
 
 .vercel
+
+# Local-only: promo videos (host on YouTube) and TypeScript build cache
+promo/
+*.tsbuildinfo
