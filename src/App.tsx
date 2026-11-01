@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
+import { RouteError } from './components/layout/RouteError'
 import { usePresence } from './lib/presence'
 import { useApplyTheme } from './lib/theme'
 import { ComingSoon } from './pages/ComingSoon'
@@ -29,10 +30,11 @@ function OpenPrivacy() {
 
 // Each page is its own file, downloaded when it is first visited, so the first screen loads less code.
 const router = createBrowserRouter([
-  { path: '/', lazy: async () => ({ Component: (await import('./pages/Landing')).Landing }) },
+  { path: '/', errorElement: <RouteError />, lazy: async () => ({ Component: (await import('./pages/Landing')).Landing }) },
   { path: '/privacy', element: <OpenPrivacy /> },
   {
     element: <AppShell />,
+    errorElement: <RouteError />,
     children: [
       { path: 'play', lazy: async () => ({ Component: (await import('./pages/Modes')).Modes }) },
       { path: 'journey', lazy: async () => ({ Component: (await import('./pages/Journey')).Journey }) },
