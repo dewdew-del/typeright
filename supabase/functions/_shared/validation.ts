@@ -191,7 +191,10 @@ export function validateRace(input: RaceInput): RaceVerdict {
   if (lastT > input.capMs + LIMITS.lateGraceMs) return reject('after-time-limit')
   if (lastT > elapsed + LIMITS.clockSlackMs) return reject('clock-mismatch')
 
-  const { summary } = replay(input.text, log, 'free')
+  const first = replay(input.text, log, 'free')
+  // A finished run is timed from the race start to the moment the server got the result (its own
+  // clock), so waiting before the first key costs speed; otherwise a slow finisher could outscore a fast one.
+  const summary = first.summary.complete ? replay(input.text, log, 'free', Math.max(elapsed, lastT)).summary : first.summary
   if (summary.keystrokes < LIMITS.minKeystrokes) {
     return { ok: true, flags: [], summary: { ...summary, wpm: 0, rawWpm: 0 }, complete: false, progress: summary.correctChars }
   }

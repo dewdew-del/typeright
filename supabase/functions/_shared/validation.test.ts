@@ -152,6 +152,14 @@ describe('validateRace', () => {
     expect(v.progress).toBe(SHORT.length)
   })
 
+  it('times a finished race from the start, so a late first key costs speed', () => {
+    const log = typeText(SHORT, human, 120_000)
+    const lastT = log[log.length - 1].t
+    const fast = validateRace({ ...race, log, now: race.startsAt + lastT + 500 })
+    const late = validateRace({ ...race, log, now: race.startsAt + lastT + 40_000 })
+    expect(late.summary!.wpm).toBeLessThan(fast.summary!.wpm)
+  })
+
   it('accepts an unfinished race with its progress', () => {
     const log = typeText(SHORT.slice(0, 40), human)
     const v = validateRace({ ...race, log, now: race.startsAt + 60_000 })
