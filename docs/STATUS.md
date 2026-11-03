@@ -79,8 +79,8 @@ Goal: the desktop app works offline (lessons, level test, casual typing, weak ke
 - issue-test allows 60 test starts per 10 minutes (was 20) because of quick restarts.
 
 ## Postponed on purpose (UI and UX, do later)
-- Home page animation. Preview: https://claude.ai/artifact/TgZBPRpDsBGEM9HNaH3Cjp
-- Button click feedback (hover, press, spinner). Preview: https://claude.ai/artifact/WVM122GHrVpjuAF4BXXyK9
+- Home page animation.
+- Button click feedback (hover, press, spinner).
 - Focus now is on functionality.
 
 ## Other docs
